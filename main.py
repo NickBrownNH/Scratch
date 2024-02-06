@@ -175,7 +175,7 @@ def update_labels():
     direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
     body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
-    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {body_rotation_y if body_rotation_y else 'N/A'}, 90)")
+    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {round(body_rotation_y,4) if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
     body_rot_z_num_label.config(text=f"Shoulder Angle: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Shoulder Angle: N/A")
 
 
