@@ -104,11 +104,48 @@ def get_distance_right_shoulder_to_left_shoulder(image):
 # distance = get_distance_right_eye_outer_to_ear(image)
 # print("Distance:", distance)
 
+def calculate_direction(distance_right, distance_left):
+    """
+    Calculate the direction the person is facing based on the distances.
+    """
+    if distance_right is not None and distance_left is not None and distance_right != 0 and distance_left != 0:
+        direction_num = distance_right / distance_left
+        direction_facing = "Right" if direction_num <= 1 else "Left"
+        return direction_num, direction_facing
+    return None, "Unknown"
+
+def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing):
+    """
+    Calculate the body rotation based on the distances and the direction facing.
+    """
+    if distance_shoulder is not None and distance_hip_shoulder is not None and distance_hip_shoulder != 0:
+        if direction_facing == "Right":
+            return round((((distance_shoulder / distance_hip_shoulder)/0.55)*90), 4)
+        else:
+            return round(180-(((distance_shoulder / distance_hip_shoulder)/0.55)*90),4)
+    return 0
+
+def data_update(image):
+    global direction_num, direction_facing, body_rotation_y
+    distance_right = get_distance_right_eye_outer_to_ear(image)
+    distance_left = get_distance_left_eye_outer_to_ear(image)
+    distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
+    distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
+    direction_num, direction_facing = calculate_direction(distance_right, distance_left)
+    body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing)
+
+
+def update_labels():
+    direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
+    direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
+    body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
+    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {body_rotation_y if body_rotation_y else 'N/A'}, 90)")
+
 
 # Function to update the pose image and data
 def update_image():
-    global direction_num, direction_facing, last_update_time, body_rotation_z
     ret, frame = cap.read()
+    global last_update_time
     if ret:
         # Process the image and detect the pose
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -117,34 +154,10 @@ def update_image():
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         current_time = time.time()
-        if current_time - last_update_time >= 0.2:  # Check if 0.2 second has passed
-            distance_right = get_distance_right_eye_outer_to_ear(image)
-            distance_left = get_distance_left_eye_outer_to_ear(image)
-            distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
-            distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
-
-            if distance_right is not None and distance_left is not None and distance_right != 0 and distance_left != 0:
-                # Calculate direction only if both distances are not None and not zero
-                direction_num = distance_right / distance_left
-                direction_facing = "Right" if direction_num <= 1 else "Left"
-
-            if distance_shoulder is not None and distance_hip_shoulder is not None and distance_hip_shoulder != 0:
-                # Calculate body rotation only if both distances are not None and hip to shoulder distance is not zero
-                if direction_facing == "Right":
-                    body_rotation_z = round((((distance_shoulder / distance_hip_shoulder)/0.55)*90), 4)
-                else:
-                    body_rotation_z = round(180-(((distance_shoulder / distance_hip_shoulder)/0.55)*90),4)
-                
-
-            last_update_time = current_time  # Update the last update time
-            
-
-            # Update data labels
-            direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
-            direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-            body_rot_z_num_label.config(text=f"Body Rotation (Z-Axis): {body_rotation_z if body_rotation_z else 'N/A'}")
-            rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {body_rotation_z if body_rotation_z else 'N/A'}, 90)")
-
+        if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
+            data_update(image) #Updating data to new vals   
+            update_labels() # Update data labels
+            last_update_time = current_time  # Update the last update time            
 
         # Draw the pose annotations
         if results.pose_landmarks:
@@ -186,8 +199,8 @@ direction_num_label.pack(anchor=tk.W)
 direction_facing_label = ttk.Label(data_frame, text="Direction Facing: N/A")
 direction_facing_label.pack(anchor=tk.W)
 
-body_rot_z_num_label = ttk.Label(data_frame, text="Body Rotation: N/A")
-body_rot_z_num_label.pack(anchor=tk.W)
+body_rot_y_num_label = ttk.Label(data_frame, text="Body Rotation (Y-Axis): N/A")
+body_rot_y_num_label.pack(anchor=tk.W)
 
 rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
 rot_mtx_label.pack(anchor=tk.W)
