@@ -5,6 +5,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import numpy as np
 import time
+import math
 
 
 
@@ -125,14 +126,49 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
             return round(180-(((distance_shoulder / distance_hip_shoulder)/0.55)*90),4)
     return 0
 
+def calculate_shoulder_angle(image):
+    """
+    Calculate the angle between the line connecting the shoulders and the horizontal line.
+    """
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    
+    if results.pose_landmarks:
+        # Get landmarks for shoulders
+        left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+        right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+        # Calculate the slope and the angle
+        delta_x = right_shoulder.x - left_shoulder.x
+        delta_y = right_shoulder.y - left_shoulder.y  # Y value decreases upwards in image coordinates
+        
+        angle_radians = math.atan2(delta_y, delta_x)  # Angle with respect to the horizontal line
+        angle_degrees = math.degrees(angle_radians)
+        
+        # Adjusting the angle to horizontal, 0 degrees means the shoulders are perfectly horizontal
+        
+        if (angle_degrees > 0):
+            shoulder_angle = -(angle_degrees)+180
+
+        else:
+            shoulder_angle = -((angle_degrees)+180)
+        
+        
+        
+        
+        return shoulder_angle
+    return None
+
 def data_update(image):
-    global direction_num, direction_facing, body_rotation_y
+    global direction_num, direction_facing, body_rotation_y, body_rotation_z
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing)
+    body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
+            
 
 
 def update_labels():
@@ -140,6 +176,7 @@ def update_labels():
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
     body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
     rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {body_rotation_y if body_rotation_y else 'N/A'}, 90)")
+    body_rot_z_num_label.config(text=f"Shoulder Angle: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Shoulder Angle: N/A")
 
 
 # Function to update the pose image and data
@@ -204,6 +241,9 @@ body_rot_y_num_label.pack(anchor=tk.W)
 
 rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
 rot_mtx_label.pack(anchor=tk.W)
+
+body_rot_z_num_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
+body_rot_z_num_label.pack(anchor=tk.W)
 
 
 
