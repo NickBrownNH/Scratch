@@ -97,6 +97,23 @@ def get_distance_right_shoulder_to_left_shoulder(image):
 
     return distance
 
+def get_distance_right_hip_to_left_hip(image):
+    """
+    Get the distance between the right hip and the left hip using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+        left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
+
+        # Calculate the distance
+        distance = calculate_distance(right_hip, left_hip)
+
+    return distance
+
 
 
 
@@ -125,6 +142,18 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
         else:
             return round(180-(((distance_shoulder / distance_hip_shoulder)/0.55)*90),4)
     return 0
+
+def calculate_body_rotation_x(distance_shoulders, distance_hips):
+    """
+    Calculate the body rotation based on the distances and the direction facing.
+    """
+    if distance_shoulders is not None and distance_hips is not None and distance_hips != 0:
+            return round(((distance_shoulders / distance_hips)/1.5)*90, 4)
+    return 0
+
+
+
+
 
 def calculate_shoulder_angle(image):
     """
@@ -160,14 +189,16 @@ def calculate_shoulder_angle(image):
     return None
 
 def data_update(image):
-    global direction_num, direction_facing, body_rotation_y, body_rotation_z
+    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
+    distance_hips = get_distance_right_hip_to_left_hip(image)
     body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing)
     body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
+    body_rotation_x = calculate_body_rotation_x(distance_shoulder, distance_hips)
             
 
 
@@ -175,8 +206,9 @@ def update_labels():
     direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
     body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
-    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): (55, {round(body_rotation_y,4) if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
+    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): ({body_rotation_x if body_rotation_x else 'N/A'}, {body_rotation_y if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
     body_rot_z_num_label.config(text=f"Shoulder Angle: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Shoulder Angle: N/A")
+    body_rot_x_num_label.config(text=f"Body Rotation (X-Axis): {body_rotation_x if body_rotation_x else 'N/A'}")
 
 
 # Function to update the pose image and data
@@ -244,6 +276,9 @@ rot_mtx_label.pack(anchor=tk.W)
 
 body_rot_z_num_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
 body_rot_z_num_label.pack(anchor=tk.W)
+
+body_rot_x_num_label = ttk.Label(data_frame, text="Body Rotation (X-Axis): N/A")
+body_rot_x_num_label.pack(anchor=tk.W)
 
 
 
