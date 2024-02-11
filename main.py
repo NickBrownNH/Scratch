@@ -19,6 +19,8 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 body_rotation_z = 0
 max_shoulder_size = 0
+tickCheck = 0
+
 
 
 
@@ -132,23 +134,23 @@ def calculate_direction(distance_right, distance_left):
         return direction_num, direction_facing
     return None, "Unknown"
 
-def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing):
+def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, init_val):
     """
     Calculate the body rotation based on the distances and the direction facing.
     """
     if distance_shoulder is not None and distance_hip_shoulder is not None and distance_hip_shoulder != 0:
         if direction_facing == "Right":
-            return round((((distance_shoulder / distance_hip_shoulder)/0.55)*90), 4)
+            return round((((distance_shoulder / distance_hip_shoulder)/init_val)*90), 4) #init_val = 0.55
         else:
-            return round(180-(((distance_shoulder / distance_hip_shoulder)/0.55)*90),4)
+            return round(180-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
     return 0
 
-def calculate_body_rotation_x(distance_shoulders, distance_hips):
+def calculate_body_rotation_x(distance_hip_shoulders, distance_shoulders, init_val_2):
     """
     Calculate the body rotation based on the distances and the direction facing.
     """
-    if distance_shoulders is not None and distance_hips is not None and distance_hips != 0:
-            return round(((distance_shoulders / distance_hips)/1.5)*90, 4)
+    if distance_shoulders is not None and distance_hip_shoulders is not None and distance_hip_shoulders != 0:
+            return round(((distance_hip_shoulders / distance_shoulders)/init_val_2)*90, 4) #init_val = 2.1
     return 0
 
 
@@ -188,6 +190,11 @@ def calculate_shoulder_angle(image):
         return shoulder_angle
     return None
 
+def init_data_update(image):
+    global init_distance_shoulder, init_distance_hip_shoulder
+    init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
+    init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
+
 def data_update(image):
     global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x
     distance_right = get_distance_right_eye_outer_to_ear(image)
@@ -195,10 +202,9 @@ def data_update(image):
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
-    distance_hips = get_distance_right_hip_to_left_hip(image)
-    body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing)
+    body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
-    body_rotation_x = calculate_body_rotation_x(distance_shoulder, distance_hips)
+    body_rotation_x = calculate_body_rotation_x(distance_hip_shoulder, distance_shoulder, (init_distance_hip_shoulder/init_distance_shoulder))
             
 
 
@@ -214,13 +220,29 @@ def update_labels():
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time
+    global last_update_time, do_once
+    do_once = False
+
+
+
+    if last_update_time == 0:  # Check if this is the first time update_image is called
+        time.sleep(5)  # Wait for 5 seconds
+        last_update_time = time.time()  # Update last_update_time to current time
+        do_once = True
+
+
+
     if ret:
         # Process the image and detect the pose
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = pose.process(image)
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+
+        if do_once:
+            init_data_update(image)
+            print("Helllooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo")
 
         current_time = time.time()
         if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
@@ -285,8 +307,11 @@ body_rot_x_num_label.pack(anchor=tk.W)
 # Open the webcam
 cap = cv2.VideoCapture(0)
 
+
 # Start the periodic update of the image and data
 update_image()
+
+
 
 # Start the Tkinter main loop
 root.mainloop()
