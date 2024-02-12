@@ -145,12 +145,12 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
             return round(180-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
     return 0
 
-def calculate_body_rotation_x(distance_hip_shoulders, distance_shoulders, init_val_2):
+def calculate_body_rotation_x(distance_hip_shoulders, distance_shoulders, init_val_2, y_rot):
     """
     Calculate the body rotation based on the distances and the direction facing.
     """
     if distance_shoulders is not None and distance_hip_shoulders is not None and distance_hip_shoulders != 0:
-            return round(((distance_hip_shoulders / distance_shoulders)/init_val_2)*90, 4) #init_val = 2.1
+            return round(((distance_hip_shoulders / distance_shoulders)/(init_val_2-0*(init_val_2* (abs(y_rot-90))/90 )))*90, 4) #init_val = 2.1
     return 0
 
 
@@ -190,13 +190,49 @@ def calculate_shoulder_angle(image):
         return shoulder_angle
     return None
 
+
+
+def calculate_angle(a,b,c):
+    a = np.array(a) # First
+    b = np.array(b) # Mid
+    c = np.array(c) # End
+    
+    radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+    angle = np.abs(radians*180.0/np.pi)
+    
+    if angle >180.0:
+        angle = 360-angle
+        
+    return angle
+
+def calculate_left_arm_angle(image):
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+    
+    if results.pose_landmarks:
+        # Get landmarks for shoulders
+        left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+        left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+        left_wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+ 
+        angle = calculate_angle(left_shoulder, left_elbow, left_wrist)
+
+        return angle
+    return None
+
+
+
+
+
+
 def init_data_update(image):
     global init_distance_shoulder, init_distance_hip_shoulder
     init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
 
 def data_update(image):
-    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x
+    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x, test_num
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -204,7 +240,9 @@ def data_update(image):
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
-    body_rotation_x = calculate_body_rotation_x(distance_hip_shoulder, distance_shoulder, (init_distance_hip_shoulder/init_distance_shoulder))
+    body_rotation_x = calculate_body_rotation_x(distance_hip_shoulder, distance_shoulder, (init_distance_hip_shoulder/init_distance_shoulder), body_rotation_y)
+    test_num = calculate_left_arm_angle(image)
+    #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
 
@@ -215,6 +253,8 @@ def update_labels():
     rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): ({body_rotation_x if body_rotation_x else 'N/A'}, {body_rotation_y if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
     body_rot_z_num_label.config(text=f"Shoulder Angle: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Shoulder Angle: N/A")
     body_rot_x_num_label.config(text=f"Body Rotation (X-Axis): {body_rotation_x if body_rotation_x else 'N/A'}")
+    tets_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
+
 
 
 # Function to update the pose image and data
@@ -242,7 +282,7 @@ def update_image():
 
         if do_once:
             init_data_update(image)
-            print("Helllooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo")
+            print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
 
         current_time = time.time()
         if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
@@ -302,6 +342,8 @@ body_rot_z_num_label.pack(anchor=tk.W)
 body_rot_x_num_label = ttk.Label(data_frame, text="Body Rotation (X-Axis): N/A")
 body_rot_x_num_label.pack(anchor=tk.W)
 
+tets_num_label = ttk.Label(data_frame, text="Test Num: N/A")
+tets_num_label.pack(anchor=tk.W)
 
 
 # Open the webcam
