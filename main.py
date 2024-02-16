@@ -116,6 +116,41 @@ def get_distance_right_hip_to_left_hip(image):
 
     return distance
 
+def get_head_width(image):
+    """
+    Get the distance between the right hip and the left hip using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        right_ear = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_EAR]
+        left_ear = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_EAR]
+
+        # Calculate the distance
+        distance = calculate_distance(right_ear, left_ear)
+
+    return distance
+
+def get_height_diff_right_shoulder_to_right_hip(image):
+    """
+    Get the distance between the right hip and the left hip using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+        right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
+
+        # Calculate the distance
+        distance = right_hip.y - right_shoulder.y
+
+    return distance
+
+
 
 
 
@@ -136,7 +171,8 @@ def calculate_direction(distance_right, distance_left):
 
 def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, init_val):
     """
-    Calculate the body rotation based on the distances and the direction facing.
+    Calculate the body's yaw based on the distance between the shoulders over the distance between hips and shoulders and the 
+    direction facing(left or right) to notate whether the user is turning to the left or right.
     """
     if distance_shoulder is not None and distance_hip_shoulder is not None and distance_hip_shoulder != 0:
         if direction_facing == "Right":
@@ -145,13 +181,21 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
             return round(180-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
     return 0
 
-def calculate_body_rotation_x(distance_hip_shoulders, distance_shoulders, init_val_2, y_rot):
+
+def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear_angle, init_eye_ear_angle):
     """
-    Calculate the body rotation based on the distances and the direction facing.
+    Calculate the body's pitch based on height difference between the right should and the right hip over the width of the head 
+    and the direction facing(up or down) to notate whether the user is leaning forward or backward.
     """
-    if distance_shoulders is not None and distance_hip_shoulders is not None and distance_hip_shoulders != 0:
-            return round(((distance_hip_shoulders / distance_shoulders)/(init_val_2-0*(init_val_2* (abs(y_rot-90))/90 )))*90, 4) #init_val = 2.1
+    if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
+            if eye_ear_angle <= init_eye_ear_angle:
+                print("up")
+                return round(-(90-((height_diff_hip_shoulder / head_width)/(init_val)*90)), 4) #init_val = ?
+            else:
+                print("down")
+                return round((90-((height_diff_hip_shoulder / head_width)/(init_val)*90)), 4) #init_val = ?
     return 0
+
 
 
 
@@ -193,6 +237,9 @@ def calculate_shoulder_angle(image):
 
 
 def calculate_angle(a,b,c):
+    """
+    This method is a intermediary function for the rest of the specific angle calculations
+    """
     a = np.array(a) # First
     b = np.array(b) # Mid
     c = np.array(c) # End
@@ -206,6 +253,9 @@ def calculate_angle(a,b,c):
     return angle
 
 def calculate_left_arm_angle(image):
+    """
+    Basic calculation to find the angle between the left shoulder, left elbow, and left wrist.
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
@@ -221,32 +271,66 @@ def calculate_left_arm_angle(image):
         return angle
     return None
 
+def calculate_nose_eyeInR_earR(image):
+    """
+    Calculates the angle between the nose, right inner eye, and right ear.
+    *Used to calculate whether the user is facing up or down 
+    """
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+    
+    if results.pose_landmarks:
+        # Get landmarks for shoulders
+        nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x,landmarks[mp_pose.PoseLandmark.NOSE.value].y]
+        right_eye_inner = [landmarks[mp_pose.PoseLandmark.RIGHT_EYE_INNER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_EYE_INNER.value].y]
+        right_ear = [landmarks[mp_pose.PoseLandmark.RIGHT_EAR.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_EAR.value].y]
+        angle = calculate_angle(nose, right_eye_inner, right_ear)
+
+        return angle
+    return None
 
 
 
 
 
 def init_data_update(image):
-    global init_distance_shoulder, init_distance_hip_shoulder
+    """
+    This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
+    """
+    global init_distance_shoulder, init_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle
     init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
+    init_height_diff_right_shoulder_to_right_hip = get_height_diff_right_shoulder_to_right_hip(image)
+    init_head_width = get_head_width(image)
+    init_nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
+
 
 def data_update(image):
+    """
+    This method updates all of the input and output data every time its called
+    """
     global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x, test_num
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
+    head_width = get_head_width(image)
+    height_diff_shoulder_hip = get_height_diff_right_shoulder_to_right_hip(image)
+    nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
-    body_rotation_x = calculate_body_rotation_x(distance_hip_shoulder, distance_shoulder, (init_distance_hip_shoulder/init_distance_shoulder), body_rotation_y)
-    test_num = calculate_left_arm_angle(image)
+    body_rotation_x = calculate_body_pitch(head_width, height_diff_shoulder_hip, (init_height_diff_right_shoulder_to_right_hip/init_head_width), nose_eye_ear_angle, init_nose_eye_ear_angle)
+    test_num = nose_eye_ear_angle
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
 
 def update_labels():
+    """
+    This method updates the labels every time it's called
+    """
     direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
     body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
