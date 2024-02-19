@@ -17,28 +17,8 @@ mp_drawing = mp.solutions.drawing_utils
 direction_num = 0
 direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
-body_rotation_z = 0
 max_shoulder_size = 0
 tickCheck = 0
-
-
-
-def calculate_3d_angle(A, B, C):
-    """
-    Calculate the 3D angle between vectors BA and BC using their 3D coordinates.
-
-    Parameters:
-    - A, B, C: The 3D coordinates (x, y, z) of points A, B, and C.
-
-    Returns:
-    - angle_deg: The angle in degrees between vectors BA and BC.
-    """
-    BA = np.array([A.x - B.x, A.y - B.y, A.z - B.z])
-    BC = np.array([C.x - B.x, C.y - B.y, C.z - B.z])
-    cosine_angle = np.dot(BA, BC) / (np.linalg.norm(BA) * np.linalg.norm(BC))
-    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
-    angle_deg = np.degrees(angle)
-    return angle_deg
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -63,6 +43,7 @@ def get_distance_right_eye_outer_to_ear(image):
 
     return distance
 
+
 def get_distance_left_eye_outer_to_ear(image):
     """
     Get the distance between the left eye outer and the left ear using MediaPipe Pose.
@@ -79,6 +60,7 @@ def get_distance_left_eye_outer_to_ear(image):
         distance = calculate_distance(left_eye_outer, left_ear)
 
     return distance
+
 
 def get_distance_right_hip_to_right_shoulder(image):
     """
@@ -97,6 +79,7 @@ def get_distance_right_hip_to_right_shoulder(image):
 
     return distance
 
+
 def get_distance_right_shoulder_to_left_shoulder(image):
     """
     Get the distance between the right shoulder and the left shoulder using MediaPipe Pose.
@@ -113,6 +96,7 @@ def get_distance_right_shoulder_to_left_shoulder(image):
         distance = calculate_distance(right_shoulder, left_shoulder)
 
     return distance
+
 
 def get_distance_right_hip_to_left_hip(image):
     """
@@ -131,6 +115,7 @@ def get_distance_right_hip_to_left_hip(image):
 
     return distance
 
+
 def get_head_width(image):
     """
     Get the distance between the right hip and the left hip using MediaPipe Pose.
@@ -147,6 +132,7 @@ def get_head_width(image):
         distance = calculate_distance(right_ear, left_ear)
 
     return distance
+
 
 def get_height_diff_right_shoulder_to_right_hip(image):
     """
@@ -166,13 +152,11 @@ def get_height_diff_right_shoulder_to_right_hip(image):
     return distance
 
 
-
-
-
 # Test the function with an image
 # image = cv2.imread("path_to_your_image.jpg")
 # distance = get_distance_right_eye_outer_to_ear(image)
 # print("Distance:", distance)
+
 
 def calculate_direction(distance_right, distance_left):
     """
@@ -184,7 +168,8 @@ def calculate_direction(distance_right, distance_left):
         return direction_num, direction_facing
     return None, "Unknown"
 
-def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, init_val):
+
+def calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, init_val):
     """
     Calculate the body's yaw based on the distance between the shoulders over the distance between hips and shoulders and the 
     direction facing(left or right) to notate whether the user is turning to the left or right.
@@ -194,7 +179,6 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
             return round(90-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
         else:
             return round((((distance_shoulder / distance_hip_shoulder)/init_val)*90)-90, 4) #init_val = 0.55
-
     return 0
 
 
@@ -206,18 +190,14 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
     if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
             if eye_ear_angle <= init_eye_ear_angle:
                 print("up")
-                return round(-(90-((height_diff_hip_shoulder / head_width)/(init_val)*90)), 4) #init_val = ?
+                return round(-(90-((height_diff_hip_shoulder / init_val)*90)), 4) #init_val = ?
             else:
                 print("down")
-                return round((90-((height_diff_hip_shoulder / head_width)/(init_val)*90)), 4) #init_val = ?
+                return round((90-((height_diff_hip_shoulder / init_val)*90)), 4) #init_val = ?
     return 0
 
 
-
-
-
-
-def calculate_shoulder_angle(image):
+def calculate_body_roll(image):
     """
     Calculate the angle between the line connecting the shoulders and the horizontal line.
     """
@@ -240,16 +220,10 @@ def calculate_shoulder_angle(image):
         
         if (angle_degrees > 0):
             shoulder_angle = -(angle_degrees)+180
-
         else:
             shoulder_angle = -((angle_degrees)+180)
-        
-        
-        
-        
         return shoulder_angle
     return None
-
 
 
 def calculate_angle(a,b,c):
@@ -267,6 +241,7 @@ def calculate_angle(a,b,c):
         angle = 360-angle
         
     return angle
+
 
 def calculate_left_arm_angle(image):
     """
@@ -287,6 +262,7 @@ def calculate_left_arm_angle(image):
         return angle
     return None
 
+
 def calculate_nose_eyeInR_earR(image):
     """
     Calculates the angle between the nose, right inner eye, and right ear.
@@ -305,6 +281,7 @@ def calculate_nose_eyeInR_earR(image):
 
         return angle
     return None
+
 
 def calculate_arm_3d(image):
     """
@@ -326,9 +303,6 @@ def calculate_arm_3d(image):
     return None
 
 
-
-
-
 def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
@@ -345,7 +319,7 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_pitch, test_num
+    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -354,25 +328,23 @@ def data_update(image):
     height_diff_shoulder_hip = get_height_diff_right_shoulder_to_right_hip(image)
     nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
-    body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
-    body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
-    body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, (init_height_diff_right_shoulder_to_right_hip/init_head_width), nose_eye_ear_angle, init_nose_eye_ear_angle)
+    body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
+    body_roll = calculate_body_roll(image)  # Calculate shoulder angle
+    body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
     test_num = calculate_arm_3d(image)
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
-
 
 def update_labels():
     """
     This method updates the labels every time it's called
     """
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-    rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}, {body_rotation_y if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
-    body_rot_z_num_label.config(text=f"Torso Roll: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Torso Roll: N/A")
-    body_rot_y_num_label.config(text=f"Torso Yaw: {body_rotation_y:.2f}°" if body_rotation_y else "Torso Yaw: N/A")
-    body_rot_x_num_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
-    tets_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
-
+    rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
+    body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
+    body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
+    body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
+    test_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
 
 
 # Function to update the pose image and data
@@ -382,12 +354,10 @@ def update_image():
     do_once = False
 
 
-
     if last_update_time == 0:  # Check if this is the first time update_image is called
         time.sleep(5)  # Wait for 5 seconds
         last_update_time = time.time()  # Update last_update_time to current time
         do_once = True
-
 
 
     if ret:
@@ -436,9 +406,9 @@ video_label.pack(side=tk.LEFT, padx=10, pady=10)
 
 # Create a frame for data output
 data_frame = ttk.LabelFrame(main_frame, text="Data Output")
-data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=100, pady=10)  # Apply padx and pady here
+data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
 data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
-data_frame.config(width=300, height=200)  # Set the width and height of the frame
+data_frame.config(width=500, height=200)  # Set the width and height of the frame
 
 
 # Labels for displaying data
@@ -448,17 +418,17 @@ direction_facing_label.pack(anchor=tk.W)
 rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
 rot_mtx_label.pack(anchor=tk.W)
 
-body_rot_x_num_label = ttk.Label(data_frame, text="Body Rotation (X-Axis): N/A")
-body_rot_x_num_label.pack(anchor=tk.W)
+body_pitch_label = ttk.Label(data_frame, text="Torso Pitch: N/A")
+body_pitch_label.pack(anchor=tk.W)
 
-body_rot_z_num_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
-body_rot_z_num_label.pack(anchor=tk.W)
+body_roll_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
+body_roll_label.pack(anchor=tk.W)
 
-body_rot_y_num_label = ttk.Label(data_frame, text="Body Rotation (Y-Axis): N/A")
-body_rot_y_num_label.pack(anchor=tk.W)
+body_yaw_label = ttk.Label(data_frame, text="Body Yaw: N/A")
+body_yaw_label.pack(anchor=tk.W)
 
-tets_num_label = ttk.Label(data_frame, text="Test Num: N/A")
-tets_num_label.pack(anchor=tk.W)
+test_num_label = ttk.Label(data_frame, text="Test Num: N/A")
+test_num_label.pack(anchor=tk.W)
 
 
 # Open the webcam
@@ -467,7 +437,6 @@ cap = cv2.VideoCapture(0)
 
 # Start the periodic update of the image and data
 update_image()
-
 
 
 # Start the Tkinter main loop
