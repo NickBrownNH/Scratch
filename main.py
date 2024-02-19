@@ -23,7 +23,22 @@ tickCheck = 0
 
 
 
+def calculate_3d_angle(A, B, C):
+    """
+    Calculate the 3D angle between vectors BA and BC using their 3D coordinates.
 
+    Parameters:
+    - A, B, C: The 3D coordinates (x, y, z) of points A, B, and C.
+
+    Returns:
+    - angle_deg: The angle in degrees between vectors BA and BC.
+    """
+    BA = np.array([A.x - B.x, A.y - B.y, A.z - B.z])
+    BC = np.array([C.x - B.x, C.y - B.y, C.z - B.z])
+    cosine_angle = np.dot(BA, BC) / (np.linalg.norm(BA) * np.linalg.norm(BC))
+    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
+    angle_deg = np.degrees(angle)
+    return angle_deg
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -176,9 +191,10 @@ def calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_
     """
     if distance_shoulder is not None and distance_hip_shoulder is not None and distance_hip_shoulder != 0:
         if direction_facing == "Right":
-            return round((((distance_shoulder / distance_hip_shoulder)/init_val)*90), 4) #init_val = 0.55
+            return round(90-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
         else:
-            return round(180-(((distance_shoulder / distance_hip_shoulder)/init_val)*90),4) #init_val = 0.55
+            return round((((distance_shoulder / distance_hip_shoulder)/init_val)*90)-90, 4) #init_val = 0.55
+
     return 0
 
 
@@ -290,6 +306,25 @@ def calculate_nose_eyeInR_earR(image):
         return angle
     return None
 
+def calculate_arm_3d(image):
+    """
+    Calculates the angle between the nose, right inner eye, and right ear.
+    *Used to calculate whether the user is facing up or down 
+    """
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+    
+    if results.pose_landmarks:
+        # Get landmarks for shoulders
+        left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+        left_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
+        left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
+
+        angle = left_wrist.z
+        return angle
+    return None
+
 
 
 
@@ -310,7 +345,7 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_rotation_x, test_num
+    global direction_num, direction_facing, body_rotation_y, body_rotation_z, body_pitch, test_num
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -321,8 +356,8 @@ def data_update(image):
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_rotation_y = calculate_body_rotation(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_rotation_z = calculate_shoulder_angle(image)  # Calculate shoulder angle
-    body_rotation_x = calculate_body_pitch(head_width, height_diff_shoulder_hip, (init_height_diff_right_shoulder_to_right_hip/init_head_width), nose_eye_ear_angle, init_nose_eye_ear_angle)
-    test_num = nose_eye_ear_angle
+    body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, (init_height_diff_right_shoulder_to_right_hip/init_head_width), nose_eye_ear_angle, init_nose_eye_ear_angle)
+    test_num = calculate_arm_3d(image)
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
@@ -331,12 +366,11 @@ def update_labels():
     """
     This method updates the labels every time it's called
     """
-    direction_num_label.config(text=f"Direction Num: {round(direction_num, 4) if direction_num else 'N/A'}")
     direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-    body_rot_y_num_label.config(text=f"Body Rotation (Y-Axis): {body_rotation_y if body_rotation_y else 'N/A'}")
-    rot_mtx_label.config(text=f"Rotation Matrix (X, Y, Z): ({body_rotation_x if body_rotation_x else 'N/A'}, {body_rotation_y if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
-    body_rot_z_num_label.config(text=f"Shoulder Angle: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Shoulder Angle: N/A")
-    body_rot_x_num_label.config(text=f"Body Rotation (X-Axis): {body_rotation_x if body_rotation_x else 'N/A'}")
+    rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}, {body_rotation_y if body_rotation_y else 'N/A'}, {round(body_rotation_z,4) if body_rotation_z else 'N/A'})")
+    body_rot_z_num_label.config(text=f"Torso Roll: {body_rotation_z:.2f}°" if body_rotation_z is not None else "Torso Roll: N/A")
+    body_rot_y_num_label.config(text=f"Torso Yaw: {body_rotation_y:.2f}°" if body_rotation_y else "Torso Yaw: N/A")
+    body_rot_x_num_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
     tets_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
 
 
@@ -408,23 +442,20 @@ data_frame.config(width=300, height=200)  # Set the width and height of the fram
 
 
 # Labels for displaying data
-direction_num_label = ttk.Label(data_frame, text="Direction Num: N/A")
-direction_num_label.pack(anchor=tk.W)
-
 direction_facing_label = ttk.Label(data_frame, text="Direction Facing: N/A")
 direction_facing_label.pack(anchor=tk.W)
-
-body_rot_y_num_label = ttk.Label(data_frame, text="Body Rotation (Y-Axis): N/A")
-body_rot_y_num_label.pack(anchor=tk.W)
 
 rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
 rot_mtx_label.pack(anchor=tk.W)
 
+body_rot_x_num_label = ttk.Label(data_frame, text="Body Rotation (X-Axis): N/A")
+body_rot_x_num_label.pack(anchor=tk.W)
+
 body_rot_z_num_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
 body_rot_z_num_label.pack(anchor=tk.W)
 
-body_rot_x_num_label = ttk.Label(data_frame, text="Body Rotation (X-Axis): N/A")
-body_rot_x_num_label.pack(anchor=tk.W)
+body_rot_y_num_label = ttk.Label(data_frame, text="Body Rotation (Y-Axis): N/A")
+body_rot_y_num_label.pack(anchor=tk.W)
 
 tets_num_label = ttk.Label(data_frame, text="Test Num: N/A")
 tets_num_label.pack(anchor=tk.W)
