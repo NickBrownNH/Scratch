@@ -18,7 +18,8 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
-user_height = 0.0
+user_height = 172.72 #cm
+user_depth = 100 #cm
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -241,6 +242,24 @@ def get_height_diff_right_shoulder_to_right_hip(image):
     return distance
 
 
+def get_distance_fingertip_to_fingertip(image):
+    """
+    Get the distance between the left index finger and the right index finger using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        left_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_INDEX]
+        right_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_INDEX]
+
+        # Calculate the distance
+        distance = calculate_distance(left_index_finger, right_index_finger)
+
+    return distance
+
+
 # Test the function with an image
 # image = cv2.imread("path_to_your_image.jpg")
 # distance = get_distance_right_eye_outer_to_ear(image)
@@ -396,7 +415,7 @@ def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
     """
-    global init_distance_shoulder, init_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist
+    global init_distance_shoulder, init_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio
 
     init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
     init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
@@ -407,11 +426,13 @@ def init_data_update(image):
     init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist(image)
     init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow(image)
     init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist(image)
+    init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    m_to_mpu_ratio = user_height/init_user_max_mpu
     
 
 
 def data_update(image):
-    global user_height
+    global user_height, user_depth
     """
     This method updates all of the input and output data every time its called
     """
@@ -427,7 +448,7 @@ def data_update(image):
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_roll = calculate_body_roll(image)  # Calculate shoulder angle
     body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
-    test_num = user_height
+    test_num = user_depth
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
@@ -530,23 +551,32 @@ test_num_label.pack(anchor=tk.W)
 user_height_frame = ttk.Frame(main_frame)
 user_height_frame.pack(fill='x', expand=True, pady=5)
 
-user_height_label = ttk.Label(user_height_frame, text="Enter User Height (cm):")
-user_height_label.pack(side=tk.LEFT, padx=5)
-
-user_height_entry = ttk.Entry(user_height_frame)
-user_height_entry.pack(side=tk.LEFT, padx=5)
-
 def on_confirm_height():
-    global user_height
+    global user_height, user_depth
     try:
         user_height = float(user_height_entry.get())
+        user_depth = float(user_depth_entry.get())
         print(f"User Height: {user_height} cm")
         # You can now use `user_height` for further calculations or display
     except ValueError:
         print("Please enter a valid number for height.")
 
 confirm_height_button = ttk.Button(user_height_frame, text="Confirm", command=on_confirm_height)
-confirm_height_button.pack(side=tk.LEFT, padx=5)
+confirm_height_button.pack(side=tk.BOTTOM, padx=5, pady=15)
+
+user_height_label = ttk.Label(user_height_frame, text="Enter User Height (cm):")
+user_height_label.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+user_height_entry = ttk.Entry(user_height_frame)
+user_height_entry.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+user_depth_label = ttk.Label(user_height_frame, text="Enter User Depth (cm):")
+user_depth_label.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+user_depth_entry = ttk.Entry(user_height_frame)
+user_depth_entry.pack(side=tk.BOTTOM, padx=5, pady=5)
+
+
 
 # Open the webcam
 cap = cv2.VideoCapture(0)
