@@ -18,6 +18,7 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
+user_height = 0.0
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -410,6 +411,7 @@ def init_data_update(image):
 
 
 def data_update(image):
+    global user_height
     """
     This method updates all of the input and output data every time its called
     """
@@ -425,7 +427,7 @@ def data_update(image):
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_roll = calculate_body_roll(image)  # Calculate shoulder angle
     body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
-    test_num = calculate_arm_3d(image)
+    test_num = user_height
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
@@ -502,7 +504,7 @@ video_label.pack(side=tk.LEFT, padx=10, pady=10)
 data_frame = ttk.LabelFrame(main_frame, text="Data Output")
 data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
 data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
-data_frame.config(width=500, height=200)  # Set the width and height of the frame
+data_frame.config(width=400, height=200)  # Set the width and height of the frame
 
 
 # Labels for displaying data
@@ -524,6 +526,27 @@ body_yaw_label.pack(anchor=tk.W)
 test_num_label = ttk.Label(data_frame, text="Test Num: N/A")
 test_num_label.pack(anchor=tk.W)
 
+# Add User Height Input UI Elements
+user_height_frame = ttk.Frame(main_frame)
+user_height_frame.pack(fill='x', expand=True, pady=5)
+
+user_height_label = ttk.Label(user_height_frame, text="Enter User Height (cm):")
+user_height_label.pack(side=tk.LEFT, padx=5)
+
+user_height_entry = ttk.Entry(user_height_frame)
+user_height_entry.pack(side=tk.LEFT, padx=5)
+
+def on_confirm_height():
+    global user_height
+    try:
+        user_height = float(user_height_entry.get())
+        print(f"User Height: {user_height} cm")
+        # You can now use `user_height` for further calculations or display
+    except ValueError:
+        print("Please enter a valid number for height.")
+
+confirm_height_button = ttk.Button(user_height_frame, text="Confirm", command=on_confirm_height)
+confirm_height_button.pack(side=tk.LEFT, padx=5)
 
 # Open the webcam
 cap = cv2.VideoCapture(0)
