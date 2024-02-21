@@ -18,8 +18,10 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
-user_height = 172.72 #cm
+user_height = 155.00 #cm
 user_depth = 100 #cm
+wait_for_update = 0
+once = True
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -93,7 +95,7 @@ def get_distance_left_hip_to_left_shoulder(image):
         left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
 
         # Calculate the distance
-        distance = calculate_distance(left_hip, left_shoulder)
+        distance = left_hip.y - left_shoulder.y
 
     return distance
 
@@ -259,11 +261,136 @@ def get_distance_fingertip_to_fingertip(image):
 
     return distance
 
+def get_distance_left_fingertip_to_elbow(image):
+    """
+    Get the distance between the left index finger and the right index finger using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        left_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_INDEX]
+        left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
+
+        # Calculate the distance
+        distance = calculate_distance(left_index_finger, left_elbow)
+
+    return distance
+
+def get_distance_right_fingertip_to_elbow(image):
+    """
+    Get the distance between the left index finger and the right index finger using MediaPipe Pose.
+    """
+    distance = None
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        right_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_INDEX]
+        right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
+
+        # Calculate the distance
+        distance = calculate_distance(right_index_finger, right_elbow)
+
+    return distance
+
+
+def get_left_hip_x(image):
+    x = 0
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
+        #left_hip_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].y * m_to_mpu_ratio
+        #left_hip_z = user_depth
+        
+        # Calculate the distance
+        x = left_hip_x
+
+    return x
+
+def get_left_hip_y(image):
+    y = 0
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        #left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
+        left_hip_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].y * m_to_mpu_ratio
+        #left_hip_z = user_depth
+        
+        # Calculate the distance
+        y = left_hip_y
+
+    return y
+
+
+def get_left_hip_z(image):
+    z = 0
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        #left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
+        #left_hip_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].y * m_to_mpu_ratio
+        left_hip_z = user_depth
+        
+        # Calculate the distance
+        z = left_hip_z
+
+    return z
+
+def get_left_hip_x_y_z(image):
+    global left_hip_z
+    xyz = [0,0,0]
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
+        left_hip_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].y * m_to_mpu_ratio
+        left_hip_z = user_depth
+        
+        # Calculate the distance
+        xyz = [left_hip_x,left_hip_y,left_hip_z]
+
+    return xyz
+
+
+def get_left_shoulder_x_y_z(image):
+    global left_hip_z
+    xyz = [0,0,0]
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    if results.pose_landmarks:
+        left_shoulder_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].x * m_to_mpu_ratio
+        left_shoulder_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].y * m_to_mpu_ratio
+        left_shoulder_z = calculate_z(left_hip_z, init_left_distance_hip_shoulder, get_distance_left_hip_to_left_shoulder(image), 10, image)
+        
+        # Calculate the distance
+        xyz = [left_shoulder_x, left_shoulder_y, left_shoulder_z]
+
+    return xyz
 
 # Test the function with an image
 # image = cv2.imread("path_to_your_image.jpg")
 # distance = get_distance_right_eye_outer_to_ear(image)
 # print("Distance:", distance)
+
+
+def calculate_z(z_init, max_length, actual_length, angle, image):
+    z = 0
+    if angle > 0:
+        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", actual_length: " + str(actual_length*m_to_mpu_ratio) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
+        z = z_init - np.sqrt(abs((max_length*m_to_mpu_ratio)**2 - (actual_length*m_to_mpu_ratio)**2))
+
+        return z
+    else:
+        z = z_init - np.sqrt((max_length*m_to_mpu_ratio)**2 + (actual_length*m_to_mpu_ratio)**2)
+        return z
 
 
 def calculate_direction(distance_right, distance_left):
@@ -415,10 +542,12 @@ def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
     """
-    global init_distance_shoulder, init_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio
+    global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio
 
     init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
+
     init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
+    init_left_distance_hip_shoulder = get_distance_left_hip_to_left_shoulder(image)
     init_height_diff_right_shoulder_to_right_hip = get_height_diff_right_shoulder_to_right_hip(image)
     init_head_width = get_head_width(image)
     init_nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
@@ -426,8 +555,9 @@ def init_data_update(image):
     init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist(image)
     init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow(image)
     init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist(image)
-    init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
-    m_to_mpu_ratio = user_height/init_user_max_mpu
+    init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
+    #init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    m_to_mpu_ratio = user_height/init_user_max_mpu #cm per mpu
     
 
 
@@ -436,7 +566,7 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num
+    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -448,7 +578,17 @@ def data_update(image):
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_roll = calculate_body_roll(image)  # Calculate shoulder angle
     body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
-    test_num = user_depth
+    left_hip_x = get_left_hip_x(image)
+    left_hip_y = get_left_hip_y(image)
+    left_hip_z = get_left_hip_z(image)
+    test_num = get_left_shoulder_x_y_z(image)
+
+
+    user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    m_to_mpu_ratio = user_height/user_max_mpu #cm per mpu
+    print("ratio: " + str(m_to_mpu_ratio))
+
+
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
             
 
@@ -462,12 +602,13 @@ def update_labels():
     body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
     body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
     test_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
+    #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
 
 
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time, do_once
+    global last_update_time, do_once, wait_for_update, once
     do_once = False
 
 
@@ -484,16 +625,20 @@ def update_image():
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
+        if wait_for_update > 30:
+            if once:
+                init_data_update(image)
+                print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
+                once = False
 
-        if do_once:
-            init_data_update(image)
-            print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
+            current_time = time.time()
+            if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
+                print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
+                data_update(image) #Updating data to new vals   
+                update_labels() # Update data labels
+                last_update_time = current_time  # Update the last update time
 
-        current_time = time.time()
-        if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
-            data_update(image) #Updating data to new vals   
-            update_labels() # Update data labels
-            last_update_time = current_time  # Update the last update time            
+        wait_for_update += wait_for_update + 1
 
         # Draw the pose annotations
         if results.pose_landmarks:
