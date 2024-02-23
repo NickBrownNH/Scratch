@@ -18,8 +18,8 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
-user_height = 155.00 #cm
-user_depth = 100 #cm
+user_height = 151.00 #cm
+user_depth = 150 #cm
 wait_for_update = 0
 once = True
 
@@ -365,10 +365,15 @@ def get_left_shoulder_x_y_z(image):
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
 
+    print("inisde left shoulder")
+
+
     if results.pose_landmarks:
+        print("landmarks found")
+
         left_shoulder_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].x * m_to_mpu_ratio
         left_shoulder_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].y * m_to_mpu_ratio
-        left_shoulder_z = calculate_z(left_hip_z, init_left_distance_hip_shoulder, get_distance_left_hip_to_left_shoulder(image), 10, image)
+        left_shoulder_z = calculate_z(left_hip_z, init_left_distance_hip_shoulder, body_pitch)
         
         # Calculate the distance
         xyz = [left_shoulder_x, left_shoulder_y, left_shoulder_z]
@@ -381,7 +386,7 @@ def get_left_shoulder_x_y_z(image):
 # print("Distance:", distance)
 
 
-def calculate_z(z_init, max_length, actual_length, angle, image):
+def calculate_z(z_init, max_length, actual_length, angle):
     z = 0
     if angle > 0:
         print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", actual_length: " + str(actual_length*m_to_mpu_ratio) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
@@ -390,6 +395,21 @@ def calculate_z(z_init, max_length, actual_length, angle, image):
         return z
     else:
         z = z_init - np.sqrt((max_length*m_to_mpu_ratio)**2 + (actual_length*m_to_mpu_ratio)**2)
+        return z
+    
+def calculate_z(z_init, max_length, angle):
+    print("calc ran")
+
+    z = 0
+    if angle > 0: #Backward
+        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
+        z = z_init + ((max_length*m_to_mpu_ratio)*(angle/90))
+
+        return z
+    else: # Forward
+        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
+        z = z_init + ((max_length*m_to_mpu_ratio)*(angle/90))        
+        
         return z
 
 
@@ -425,10 +445,10 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
     if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
             if eye_ear_angle <= init_eye_ear_angle:
                 print("up")
-                return round(-(90-((height_diff_hip_shoulder / init_val)*90)), 4) #init_val = ?
+                return round((180-((height_diff_hip_shoulder / init_val)*90)*2), 4) #init_val = ?
             else:
                 print("down")
-                return round((90-((height_diff_hip_shoulder / init_val)*90)), 4) #init_val = ?
+                return round((((height_diff_hip_shoulder / init_val)*90)*2)-180, 4) #init_val = ?
     return 0
 
 
@@ -555,8 +575,8 @@ def init_data_update(image):
     init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist(image)
     init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow(image)
     init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist(image)
-    init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
-    #init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
+    init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
     m_to_mpu_ratio = user_height/init_user_max_mpu #cm per mpu
     
 
@@ -582,11 +602,12 @@ def data_update(image):
     left_hip_y = get_left_hip_y(image)
     left_hip_z = get_left_hip_z(image)
     test_num = get_left_shoulder_x_y_z(image)
+    print("test num updated")
 
 
     user_max_mpu = get_distance_fingertip_to_fingertip(image)
     m_to_mpu_ratio = user_height/user_max_mpu #cm per mpu
-    print("ratio: " + str(m_to_mpu_ratio))
+    #print("ratio: " + str(m_to_mpu_ratio))
 
 
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
