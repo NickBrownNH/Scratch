@@ -360,25 +360,47 @@ def get_left_hip_x_y_z(image):
 
 
 def get_left_shoulder_x_y_z(image):
-    global left_hip_z
+    global left_hip_z, left_shoulder_z
     xyz = [0,0,0]
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
 
-    print("inisde left shoulder")
+    #print("inisde left shoulder")
 
 
     if results.pose_landmarks:
-        print("landmarks found")
+        #print("landmarks found")
 
         left_shoulder_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].x * m_to_mpu_ratio
         left_shoulder_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].y * m_to_mpu_ratio
-        left_shoulder_z = calculate_z(left_hip_z, init_left_distance_hip_shoulder, body_pitch)
+        left_shoulder_z = calculate_z_angle(left_hip_z, init_left_distance_hip_shoulder, body_pitch)
         
         # Calculate the distance
         xyz = [left_shoulder_x, left_shoulder_y, left_shoulder_z]
 
     return xyz
+
+def get_left_elbow_x_y_z(image):
+    global left_shoulder_z
+    xyz = [0,0,0]
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+
+    #print("inisde left shoulder")
+
+
+    if results.pose_landmarks:
+        #print("landmarks found")
+
+        left_elbow_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].x * m_to_mpu_ratio
+        left_elbow_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].y * m_to_mpu_ratio
+        left_elbow_z = calculate_z(left_shoulder_z, init_left_shoulder_to_left_elbow, get_distance_left_shoulder_to_left_elbow(image), 0, body_pitch, hipShoElb)
+        
+        # Calculate the distance
+        xyz = [left_elbow_x, left_elbow_y, left_elbow_z]
+
+    return xyz
+
 
 # Test the function with an image
 # image = cv2.imread("path_to_your_image.jpg")
@@ -386,19 +408,27 @@ def get_left_shoulder_x_y_z(image):
 # print("Distance:", distance)
 
 
-def calculate_z(z_init, max_length, actual_length, angle):
+def calculate_z(z_init, max_length, actual_length, angle, pitch, hipShoElb):
     z = 0
+    max_len = max_length*m_to_mpu_ratio
+    max_len = max_len + (max_len*0.9*abs(pitch/90)) + (max_len*0.47*abs((90-hipShoElb)/90))
+    act_len = actual_length*m_to_mpu_ratio
     if angle > 0:
-        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", actual_length: " + str(actual_length*m_to_mpu_ratio) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
-        z = z_init - np.sqrt(abs((max_length*m_to_mpu_ratio)**2 - (actual_length*m_to_mpu_ratio)**2))
+        if max_len >= act_len: 
+            act_len = max_len
+        print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
+        z = z_init + np.sqrt(abs((max_len)**2 - (act_len)**2))
 
         return z
     else:
-        z = z_init - np.sqrt((max_length*m_to_mpu_ratio)**2 + (actual_length*m_to_mpu_ratio)**2)
+        if max_len >= act_len: 
+            act_len = max_len
+        z = z_init + np.sqrt((max_len)**2 - (act_len)**2)
+        print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
         return z
     
-def calculate_z(z_init, max_length, angle):
-    print("calc ran")
+def calculate_z_angle(z_init, max_length, angle):
+    #print("calc ran")
 
     z = 0
     if angle > 0: #Backward
@@ -538,6 +568,26 @@ def calculate_nose_eyeInR_earR(image):
     return None
 
 
+def calculate_left_hip_shoulder_elbow_angle(image):
+    """
+    Calculates the angle between the nose, right inner eye, and right ear.
+    *Used to calculate whether the user is facing up or down 
+    """
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+    
+    if results.pose_landmarks:
+        # Get landmarks for shoulders
+        left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP].x,landmarks[mp_pose.PoseLandmark.LEFT_HIP].y]
+        left_shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].y]
+        left_elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW].y]
+
+        angle = calculate_angle(left_hip, left_shoulder, left_elbow)
+        return angle
+    return None
+
+
 def calculate_arm_3d(image):
     """
     Calculates the angle between the nose, right inner eye, and right ear.
@@ -586,7 +636,7 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z
+    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z, left_shoulder_z, hipShoElb
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -601,8 +651,10 @@ def data_update(image):
     left_hip_x = get_left_hip_x(image)
     left_hip_y = get_left_hip_y(image)
     left_hip_z = get_left_hip_z(image)
-    test_num = get_left_shoulder_x_y_z(image)
-    print("test num updated")
+    left_shoulder_z = left_hip_z
+    hipShoElb = calculate_left_hip_shoulder_elbow_angle(image)
+    test_num = get_left_elbow_x_y_z(image)
+    #print("test num updated")
 
 
     user_max_mpu = get_distance_fingertip_to_fingertip(image)
