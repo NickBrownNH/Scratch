@@ -387,7 +387,8 @@ def get_left_shoulder_x_y_z(image):
 
 
     if results.pose_landmarks:
-        print("shoulder")
+        if developer_mode:
+            print("shoulder")
 
         left_shoulder_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].x * m_to_mpu_ratio
         left_shoulder_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER].y * m_to_mpu_ratio
@@ -395,8 +396,8 @@ def get_left_shoulder_x_y_z(image):
 
         # Calculate the distance
         xyz = [left_shoulder_x, left_shoulder_y, left_shoulder_z]
-        
-        print(xyz)
+        if developer_mode:
+            print(xyz)
     
     return xyz
 
@@ -410,7 +411,8 @@ def get_left_elbow_x_y_z(image):
 
 
     if results.pose_landmarks:
-        print("elbow")
+        if developer_mode:
+            print("elbow")
 
         left_elbow_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].x * m_to_mpu_ratio
         left_elbow_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].y * m_to_mpu_ratio
@@ -418,7 +420,8 @@ def get_left_elbow_x_y_z(image):
         
         # Calculate the distance
         xyz = [left_elbow_x, left_elbow_y, left_elbow_z]
-        print(xyz)
+        if developer_mode:
+            print(xyz)
 
     return xyz
 
@@ -432,7 +435,8 @@ def get_left_wrist_x_y_z(image):
 
 
     if results.pose_landmarks:
-        print("wrist")
+        if developer_mode:
+            print("wrist")
 
         left_wrist_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].x * m_to_mpu_ratio
         left_wrist_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y * m_to_mpu_ratio
@@ -440,7 +444,8 @@ def get_left_wrist_x_y_z(image):
         
         # Calculate the distance
         xyz = [left_wrist_x, left_wrist_y, left_wrist_z]
-        print(xyz)
+        if developer_mode:
+            print(xyz)
 
     return xyz
 
@@ -459,7 +464,8 @@ def calculate_z(z_init, max_length, actual_length, angle, pitch, hipShoElb):
     if angle > 0:
         if act_len >= max_len: 
             act_len = max_len
-        print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
+        if developer_mode:    
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
         z = z_init + np.sqrt(abs((max_len)**2 - (act_len)**2))
 
         return z
@@ -467,7 +473,8 @@ def calculate_z(z_init, max_length, actual_length, angle, pitch, hipShoElb):
         if act_len >= max_len: 
             act_len = max_len
         z = z_init + np.sqrt((max_len)**2 - (act_len)**2)
-        print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
+        if developer_mode:
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
         return z
     
 def calculate_z_angle(z_init, max_length, angle):
@@ -475,12 +482,14 @@ def calculate_z_angle(z_init, max_length, angle):
 
     z = 0
     if angle > 0: #Backward
-        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
+        if developer_mode:
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
         z = z_init + ((max_length*m_to_mpu_ratio)*(angle/90))
 
         return z
     else: # Forward
-        print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
+        if developer_mode:
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_length*m_to_mpu_ratio) + ", angle: " + str(angle/90) + ", z + : " + str(((max_length*m_to_mpu_ratio)*(angle/90))))
         z = z_init + ((max_length*m_to_mpu_ratio)*(angle/90))        
         
         return z
@@ -517,10 +526,12 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
     """
     if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
             if eye_ear_angle <= init_eye_ear_angle:
-                print("up")
-                return round((180-((height_diff_hip_shoulder / init_val)*90)*2), 4) #init_val = ?
+                if developer_mode:
+                    print("up")
+                return round((180-((height_diff_hip_shoulder / init_val)*90)*2), 4) #init_val = ? add arcsin 
             else:
-                print("down")
+                if developer_mode:
+                    print("down")
                 return round((((height_diff_hip_shoulder / init_val)*90)*2)-180, 4) #init_val = ?
     return 0
 
@@ -639,8 +650,9 @@ def dot_prod_angle(matrixA, matrixB, matrixC):
     aMag = np.sqrt(((matrixB[0]-matrixA[0])**2) + ((matrixB[1]-matrixA[1])**2) + ((matrixB[2]-matrixA[2])**2))
     bMag = np.sqrt(((matrixC[0]-matrixB[0])**2) + ((matrixC[1]-matrixB[1])**2) + ((matrixC[2]-matrixB[2])**2))
     theta = np.arccos(aTimesB/(aMag*bMag))
-
-    print(str(theta * (180/np.pi)))
+    
+    if developer_mode:
+        print(str(theta * (180/np.pi)))
     return theta * (180/np.pi)
 
 
@@ -649,9 +661,11 @@ def calculate_arm_force(thetaUpper, thetaArm, weightAdded):
     leverArmFA = cfg * np.sin(thetaUpper + thetaArm - 90)
     leverArmAdd = forearm * np.sin(thetaUpper + thetaArm - 90)
     leverArmBic = b * np.sin(thetaB)
-    print("ThetaB: " + str(thetaB) + ", leverArmFA: " + str(leverArmFA) + "leverArmAdd: " + str(leverArmAdd) + "leverArmBic: " + str(leverArmBic))
+    if developer_mode:
+        print("ThetaB: " + str(thetaB) + ", leverArmFA: " + str(leverArmFA) + "leverArmAdd: " + str(leverArmAdd) + "leverArmBic: " + str(leverArmBic))
     force = abs((weightForearm*9.81 * leverArmFA + weightAdded*9.81 * leverArmAdd) / leverArmBic)
-    print("Bicep Force: " + str(force))
+    if developer_mode:
+        print("Bicep Force: " + str(force))
     return force
 
 
@@ -718,11 +732,12 @@ def update_labels():
     """
     This method updates the labels every time it's called
     """
-    direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-    rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
-    body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
-    body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
-    body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
+    if developer_mode:
+        direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
+        rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
+        body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
+        body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
+        body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
     bicep_force_label.config(text=f"Bicep Force: {left_arm_bicep_force if left_arm_bicep_force else 'N/A'}")
     test_num_label.config(text=f"Left Arm Angle: {test_num if test_num else 'N/A'}")
     #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
@@ -751,12 +766,14 @@ def update_image():
         if wait_for_update > 30:
             if once:
                 init_data_update(image)
-                print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
+                if developer_mode:
+                    print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
                 once = False
 
             current_time = time.time()
             if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
-                print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
+                if developer_mode:
+                    print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
                 data_update(image) #Updating data to new vals   
                 update_labels() # Update data labels
                 last_update_time = current_time  # Update the last update time
@@ -876,20 +893,22 @@ data_frame.config(width=400, height=200)  # Set the width and height of the fram
 
 
 # Labels for displaying data
-direction_facing_label = ttk.Label(data_frame, text="Direction Facing: N/A")
-direction_facing_label.pack(anchor=tk.W)
+if developer_mode:
 
-rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
-rot_mtx_label.pack(anchor=tk.W)
+    direction_facing_label = ttk.Label(data_frame, text="Direction Facing: N/A")
+    direction_facing_label.pack(anchor=tk.W)
 
-body_pitch_label = ttk.Label(data_frame, text="Torso Pitch: N/A")
-body_pitch_label.pack(anchor=tk.W)
+    rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
+    rot_mtx_label.pack(anchor=tk.W)
 
-body_roll_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
-body_roll_label.pack(anchor=tk.W)
+    body_pitch_label = ttk.Label(data_frame, text="Torso Pitch: N/A")
+    body_pitch_label.pack(anchor=tk.W)
 
-body_yaw_label = ttk.Label(data_frame, text="Body Yaw: N/A")
-body_yaw_label.pack(anchor=tk.W)
+    body_roll_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
+    body_roll_label.pack(anchor=tk.W)
+
+    body_yaw_label = ttk.Label(data_frame, text="Body Yaw: N/A")
+    body_yaw_label.pack(anchor=tk.W)
 
 bicep_force_label = ttk.Label(data_frame, text="Force: N/A")
 bicep_force_label.pack(anchor=tk.W)
@@ -901,6 +920,8 @@ test_num_label.pack(anchor=tk.W)
 user_height_frame = ttk.Frame(main_frame)
 user_height_frame.pack(fill='x', expand=True, pady=5)
 
+
+"""
 def on_confirm_height():
     global user_height, user_depth
     try:
@@ -925,7 +946,7 @@ user_depth_label.pack(side=tk.BOTTOM, padx=5, pady=5)
 
 user_depth_entry = ttk.Entry(user_height_frame)
 user_depth_entry.pack(side=tk.BOTTOM, padx=5, pady=5)
-
+"""
 
 
 # Open the webcam
