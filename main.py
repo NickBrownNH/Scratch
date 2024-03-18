@@ -24,6 +24,22 @@ wait_for_update = 0
 once = True
 left_shoulder_z = 0
 left_elbow_z = 0
+user_weight = 58.967 #kg
+forearm = (user_height*0.01) * 0.216
+upperarm = (user_height*0.01) * 0.173
+cfg = forearm * 0.432
+b = forearm * 0.11
+weightForearm = user_weight * 0.023
+weightAdded = 0
+developer_mode = False  # Developer mode state
+
+
+
+
+
+
+
+
 
 def calculate_distance(landmark1, landmark2):
     """
@@ -628,6 +644,17 @@ def dot_prod_angle(matrixA, matrixB, matrixC):
     return theta * (180/np.pi)
 
 
+def calculate_arm_force(thetaUpper, thetaArm, weightAdded):
+    thetaB = 180 - ((b - upperarm * np.cos(thetaUpper))/ (np.sqrt(b**2 + upperarm**2 - 2 * b * upperarm * np.cos(thetaUpper))) )
+    leverArmFA = cfg * np.sin(thetaUpper + thetaArm - 90)
+    leverArmAdd = forearm * np.sin(thetaUpper + thetaArm - 90)
+    leverArmBic = b * np.sin(thetaB)
+    print("ThetaB: " + str(thetaB) + ", leverArmFA: " + str(leverArmFA) + "leverArmAdd: " + str(leverArmAdd) + "leverArmBic: " + str(leverArmBic))
+    force = abs((weightForearm*9.81 * leverArmFA + weightAdded*9.81 * leverArmAdd) / leverArmBic)
+    print("Bicep Force: " + str(force))
+    return force
+
+
 def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
@@ -656,7 +683,7 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z,hipShoElb
+    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z, hipShoElb, left_arm_bicep_force
     distance_right = get_distance_right_eye_outer_to_ear(image)
     distance_left = get_distance_left_eye_outer_to_ear(image)
     distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
@@ -668,11 +695,14 @@ def data_update(image):
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_roll = calculate_body_roll(image)  # Calculate shoulder angle
     body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
+    hipShoElb = calculate_left_hip_shoulder_elbow_angle(image)
     left_hip_x = get_left_hip_x(image)
     left_hip_y = get_left_hip_y(image)
     left_hip_z = get_left_hip_z(image)
-    hipShoElb = calculate_left_hip_shoulder_elbow_angle(image)
-    test_num = dot_prod_angle(get_left_wrist_x_y_z(image), get_left_elbow_x_y_z(image), get_left_shoulder_x_y_z(image))
+    leftShoulderAngle = dot_prod_angle(get_left_elbow_x_y_z(image), get_left_shoulder_x_y_z(image), get_left_hip_x_y_z(image))
+    leftArmAngle = dot_prod_angle(get_left_wrist_x_y_z(image), get_left_elbow_x_y_z(image), get_left_shoulder_x_y_z(image)) 
+    left_arm_bicep_force = calculate_arm_force(leftShoulderAngle, leftArmAngle, weightAdded)
+    test_num = leftArmAngle
     #print("test num updated")
 
 
@@ -693,7 +723,8 @@ def update_labels():
     body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
     body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
     body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
-    test_num_label.config(text=f"TestNum: {test_num if test_num else 'N/A'}")
+    bicep_force_label.config(text=f"Bicep Force: {left_arm_bicep_force if left_arm_bicep_force else 'N/A'}")
+    test_num_label.config(text=f"Left Arm Angle: {test_num if test_num else 'N/A'}")
     #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
 
 
@@ -746,6 +777,85 @@ def update_image():
                 
     root.after(10, update_image)  # Repeat after an interval
 
+
+
+
+
+
+
+
+
+
+
+"""
+Start up sequence
+\/ \/ \/
+"""
+def start_screen():
+    global user_weight, user_height, user_depth, weightAdded, developer_mode
+
+    def on_submit():
+        try:
+            global user_weight, user_height, user_depth, weightAdded, developer_mode
+            user_weight = float(weight_entry.get())
+            user_height = float(height_entry.get())
+            user_depth = float(depth_entry.get())
+            weightAdded = float(weight_holding_entry.get())
+            developer_mode = dev_mode_var.get() == 1
+            print(f"User Weight: {user_weight} kg, User Height: {user_height} cm, User Depth: {user_depth} cm, Weight Holding: {weightAdded} kg")
+            start_window.destroy()  # Close the start screen
+        except ValueError:
+            print("Please enter valid numbers for weight, height, and depth.")
+
+    start_window = tk.Tk()
+    start_window.title("User Data Input")
+
+    ttk.Label(start_window, text="Enter Your Weight (kg):").pack(padx=10, pady=5)
+    weight_entry = ttk.Entry(start_window)
+    weight_entry.pack(padx=10, pady=5)
+
+    ttk.Label(start_window, text="Enter Your Height (cm):").pack(padx=10, pady=5)
+    height_entry = ttk.Entry(start_window)
+    height_entry.pack(padx=10, pady=5)
+
+    ttk.Label(start_window, text="Enter Your Distance from Camera (cm):").pack(padx=10, pady=5)
+    depth_entry = ttk.Entry(start_window)
+    depth_entry.pack(padx=10, pady=5)
+
+    ttk.Label(start_window, text="Enter The Weight You're Holding (kg):").pack(padx=10, pady=5)
+    weight_holding_entry = ttk.Entry(start_window)
+    weight_holding_entry.pack(padx=10, pady=5)
+
+    # Checkbox for Developer Mode
+    dev_mode_var = tk.IntVar()
+    dev_mode_check = ttk.Checkbutton(start_window, text="Developer Mode", variable=dev_mode_var)
+    dev_mode_check.pack(padx=10, pady=5)
+
+    ttk.Button(start_window, text="Submit", command=on_submit).pack(padx=10, pady=15)
+
+    start_window.mainloop()
+
+# Start screen to collect user data
+start_screen()
+
+
+"""
+/\ /\ /\ 
+Start Up Sequence
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Set up the main Tkinter window
 root = tk.Tk()
 root.title("Pose Detection with Data Output")
@@ -780,6 +890,9 @@ body_roll_label.pack(anchor=tk.W)
 
 body_yaw_label = ttk.Label(data_frame, text="Body Yaw: N/A")
 body_yaw_label.pack(anchor=tk.W)
+
+bicep_force_label = ttk.Label(data_frame, text="Force: N/A")
+bicep_force_label.pack(anchor=tk.W)
 
 test_num_label = ttk.Label(data_frame, text="Test Num: N/A")
 test_num_label.pack(anchor=tk.W)
