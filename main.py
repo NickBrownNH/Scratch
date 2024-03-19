@@ -47,13 +47,16 @@ def calculate_distance(landmark1, landmark2):
     """
     return np.sqrt((landmark1.x - landmark2.x) ** 2 + (landmark1.y - landmark2.y) ** 2)
 
-def get_distance_right_eye_outer_to_ear(image):
+def get_distance_right_eye_outer_to_ear():
     """
     Get the distance between the right eye outer and the right ear using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_eye_outer = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_EYE_OUTER]
@@ -65,13 +68,16 @@ def get_distance_right_eye_outer_to_ear(image):
     return distance
 
 
-def get_distance_left_eye_outer_to_ear(image):
+def get_distance_left_eye_outer_to_ear():
     """
     Get the distance between the left eye outer and the left ear using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_eye_outer = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_EYE_OUTER]
@@ -83,13 +89,16 @@ def get_distance_left_eye_outer_to_ear(image):
     return distance
 
 
-def get_distance_right_hip_to_right_shoulder(image):
+def get_distance_right_hip_to_right_shoulder():
     """
     Get the distance between the right hip and the right shoulder using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
@@ -100,13 +109,16 @@ def get_distance_right_hip_to_right_shoulder(image):
 
     return distance
 
-def get_distance_left_hip_to_left_shoulder(image):
+def get_distance_left_hip_to_left_shoulder():
     """
     Get the distance between the left hip and the left shoulder using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP]
@@ -118,13 +130,16 @@ def get_distance_left_hip_to_left_shoulder(image):
     return distance
 
 
-def get_distance_right_shoulder_to_left_shoulder(image):
+def get_distance_right_shoulder_to_left_shoulder():
     """
     Get the distance between the right shoulder and the left shoulder using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
@@ -136,13 +151,16 @@ def get_distance_right_shoulder_to_left_shoulder(image):
     return distance
 
 
-def get_distance_right_hip_to_left_hip(image):
+def get_distance_right_hip_to_left_hip():
     """
     Get the distance between the right hip and the left hip using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_hip = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_HIP]
@@ -154,13 +172,16 @@ def get_distance_right_hip_to_left_hip(image):
     return distance
 
 
-def get_distance_right_shoulder_to_right_elbow(image):
+def get_distance_right_shoulder_to_right_elbow():
     """
     Get the distance between the right shoulder and the right elbow using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
@@ -172,13 +193,16 @@ def get_distance_right_shoulder_to_right_elbow(image):
     return distance
 
 
-def get_distance_left_shoulder_to_left_elbow(image):
+def get_distance_left_shoulder_to_left_elbow():
     """
     Get the distance between the left shoulder and the left elbow using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
@@ -190,14 +214,17 @@ def get_distance_left_shoulder_to_left_elbow(image):
     return distance
 
 
-def get_distance_right_elbow_to_right_wrist(image):
+def get_distance_right_elbow_to_right_wrist():
     """
     Get the distance between the right elbow and the right wrist using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
-
+    """
+    
     if results.pose_landmarks:
         right_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_ELBOW]
         right_wrist = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_WRIST]
@@ -208,13 +235,16 @@ def get_distance_right_elbow_to_right_wrist(image):
     return distance
 
 
-def get_distance_left_elbow_to_left_wrist(image):
+def get_distance_left_elbow_to_left_wrist():
     """
     Get the distance between the left elbow and the left wrist using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_elbow = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW]
@@ -226,13 +256,16 @@ def get_distance_left_elbow_to_left_wrist(image):
     return distance
 
 
-def get_head_width(image):
+def get_head_width():
     """
     Get the distance between the right ear and the left ear using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_ear = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_EAR]
@@ -244,13 +277,16 @@ def get_head_width(image):
     return distance
 
 
-def get_height_diff_right_shoulder_to_right_hip(image):
+def get_height_diff_right_shoulder_to_right_hip():
     """
     Get the distance between the right hip and the left hip using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
@@ -262,13 +298,16 @@ def get_height_diff_right_shoulder_to_right_hip(image):
     return distance
 
 
-def get_distance_fingertip_to_fingertip(image):
+def get_distance_fingertip_to_fingertip():
     """
     Get the distance between the left index finger and the right index finger using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_INDEX]
@@ -279,13 +318,15 @@ def get_distance_fingertip_to_fingertip(image):
 
     return distance
 
-def get_distance_left_fingertip_to_elbow(image):
+def get_distance_left_fingertip_to_elbow():
     """
     Get the distance between the left index finger and the right index finger using MediaPipe Pose.
     """
     distance = None
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_INDEX]
@@ -296,13 +337,17 @@ def get_distance_left_fingertip_to_elbow(image):
 
     return distance
 
-def get_distance_right_fingertip_to_elbow(image):
+def get_distance_right_fingertip_to_elbow():
     """
     Get the distance between the left index finger and the right index finger using MediaPipe Pose.
     """
     distance = None
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
+
 
     if results.pose_landmarks:
         right_index_finger = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_INDEX]
@@ -314,10 +359,12 @@ def get_distance_right_fingertip_to_elbow(image):
     return distance
 
 
-def get_left_hip_x(image):
+def get_left_hip_x():
     x = 0
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
@@ -329,10 +376,13 @@ def get_left_hip_x(image):
 
     return x
 
-def get_left_hip_y(image):
+def get_left_hip_y():
     y = 0
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         #left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
@@ -345,10 +395,12 @@ def get_left_hip_y(image):
     return y
 
 
-def get_left_hip_z(image):
+def get_left_hip_z():
     z = 0
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         #left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
@@ -360,11 +412,14 @@ def get_left_hip_z(image):
 
     return z
 
-def get_left_hip_x_y_z(image):
+def get_left_hip_x_y_z():
     global left_hip_z
     xyz = [0,0,0]
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
 
     if results.pose_landmarks:
         left_hip_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_HIP].x * m_to_mpu_ratio
@@ -377,12 +432,15 @@ def get_left_hip_x_y_z(image):
     return xyz
 
 
-def get_left_shoulder_x_y_z(image):
+def get_left_shoulder_x_y_z():
     global left_hip_z, left_shoulder_z
     xyz = [0,0,0]
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
-
+    """
+    
     #print("inisde left shoulder")
 
 
@@ -401,11 +459,15 @@ def get_left_shoulder_x_y_z(image):
     
     return xyz
 
-def get_left_elbow_x_y_z(image):
+def get_left_elbow_x_y_z():
     global left_shoulder_z, left_elbow_z
     xyz = [0,0,0]
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
+    """
+    
 
     #print("inisde left shoulder")
 
@@ -416,7 +478,7 @@ def get_left_elbow_x_y_z(image):
 
         left_elbow_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].x * m_to_mpu_ratio
         left_elbow_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].y * m_to_mpu_ratio
-        left_elbow_z = calculate_z(left_shoulder_z, init_left_shoulder_to_left_elbow, get_distance_left_shoulder_to_left_elbow(image), 0, body_pitch, hipShoElb)
+        left_elbow_z = calculate_z(left_shoulder_z, init_left_shoulder_to_left_elbow, get_distance_left_shoulder_to_left_elbow(), 0, body_pitch, hipShoElb)
         
         # Calculate the distance
         xyz = [left_elbow_x, left_elbow_y, left_elbow_z]
@@ -425,12 +487,14 @@ def get_left_elbow_x_y_z(image):
 
     return xyz
 
-def get_left_wrist_x_y_z(image):
+def get_left_wrist_x_y_z():
     global left_elbow_z, left_wrist_z
     xyz = [0,0,0]
+    
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
-
+    """
     #print("inisde left shoulder")
 
 
@@ -440,7 +504,7 @@ def get_left_wrist_x_y_z(image):
 
         left_wrist_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].x * m_to_mpu_ratio
         left_wrist_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y * m_to_mpu_ratio
-        left_wrist_z = calculate_z(left_elbow_z, init_left_elbow_to_left_wrist, get_distance_left_elbow_to_left_wrist(image), 0, body_pitch, hipShoElb)
+        left_wrist_z = calculate_z(left_elbow_z, init_left_elbow_to_left_wrist, get_distance_left_elbow_to_left_wrist(), 0, body_pitch, hipShoElb)
         
         # Calculate the distance
         xyz = [left_wrist_x, left_wrist_y, left_wrist_z]
@@ -536,13 +600,17 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
     return 0
 
 
-def calculate_body_roll(image):
+def calculate_body_roll():
     """
     Calculate the angle between the line connecting the shoulders and the horizontal line.
     """
+
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
-    
+    """
+
+
     if results.pose_landmarks:
         # Get landmarks for shoulders
         left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
@@ -582,13 +650,16 @@ def calculate_angle(a,b,c):
     return angle
 
 
-def calculate_left_arm_angle(image):
+def calculate_left_arm_angle():
     """
     Basic calculation to find the angle between the left shoulder, left elbow, and left wrist.
+    """
+
     """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
+    """
     
     if results.pose_landmarks:
         # Get landmarks for shoulders
@@ -602,15 +673,19 @@ def calculate_left_arm_angle(image):
     return None
 
 
-def calculate_nose_eyeInR_earR(image):
+def calculate_nose_eyeInR_earR():
     """
     Calculates the angle between the nose, right inner eye, and right ear.
     *Used to calculate whether the user is facing up or down 
     """
+
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
-    
+    """
+
+
     if results.pose_landmarks:
         # Get landmarks for shoulders
         nose = [landmarks[mp_pose.PoseLandmark.NOSE.value].x,landmarks[mp_pose.PoseLandmark.NOSE.value].y]
@@ -622,15 +697,18 @@ def calculate_nose_eyeInR_earR(image):
     return None
 
 
-def calculate_left_hip_shoulder_elbow_angle(image):
+def calculate_left_hip_shoulder_elbow_angle():
     """
     Calculates the angle between the nose, right inner eye, and right ear.
     *Used to calculate whether the user is facing up or down 
     """
+
+    """
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
-    
+    """
+
     if results.pose_landmarks:
         # Get landmarks for shoulders
         left_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP].x,landmarks[mp_pose.PoseLandmark.LEFT_HIP].y]
@@ -673,21 +751,25 @@ def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
     """
-    global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio
+    global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, image_rgb, results, landmarks
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
 
-    init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
 
-    init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
-    init_left_distance_hip_shoulder = get_distance_left_hip_to_left_shoulder(image)
-    init_height_diff_right_shoulder_to_right_hip = get_height_diff_right_shoulder_to_right_hip(image)
-    init_head_width = get_head_width(image)
-    init_nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
-    init_right_shoulder_to_right_elbow = get_distance_right_shoulder_to_right_elbow(image)
-    init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist(image)
-    init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow(image)
-    init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist(image)
+    init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder()
+
+    init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder()
+    init_left_distance_hip_shoulder = get_distance_left_hip_to_left_shoulder()
+    init_height_diff_right_shoulder_to_right_hip = get_height_diff_right_shoulder_to_right_hip()
+    init_head_width = get_head_width()
+    init_nose_eye_ear_angle = calculate_nose_eyeInR_earR()
+    init_right_shoulder_to_right_elbow = get_distance_right_shoulder_to_right_elbow()
+    init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist()
+    init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow()
+    init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist()
     #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
-    init_user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    init_user_max_mpu = get_distance_fingertip_to_fingertip()
     m_to_mpu_ratio = user_height/init_user_max_mpu #cm per mpu
     
 
@@ -697,30 +779,34 @@ def data_update(image):
     """
     This method updates all of the input and output data every time its called
     """
-    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z, hipShoElb, left_arm_bicep_force
-    distance_right = get_distance_right_eye_outer_to_ear(image)
-    distance_left = get_distance_left_eye_outer_to_ear(image)
-    distance_shoulder = get_distance_right_shoulder_to_left_shoulder(image)
-    distance_hip_shoulder = get_distance_right_hip_to_right_shoulder(image)
-    head_width = get_head_width(image)
-    height_diff_shoulder_hip = get_height_diff_right_shoulder_to_right_hip(image)
-    nose_eye_ear_angle = calculate_nose_eyeInR_earR(image)
+    global direction_num, direction_facing, body_yaw, body_roll, body_pitch, test_num, left_hip_x, left_hip_y, left_hip_z, hipShoElb, left_arm_bicep_force, image_rgb, results, landmarks
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+    
+    distance_right = get_distance_right_eye_outer_to_ear()
+    distance_left = get_distance_left_eye_outer_to_ear()
+    distance_shoulder = get_distance_right_shoulder_to_left_shoulder()
+    distance_hip_shoulder = get_distance_right_hip_to_right_shoulder()
+    head_width = get_head_width()
+    height_diff_shoulder_hip = get_height_diff_right_shoulder_to_right_hip()
+    nose_eye_ear_angle = calculate_nose_eyeInR_earR()
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
-    body_roll = calculate_body_roll(image)  # Calculate shoulder angle
+    body_roll = calculate_body_roll()  # Calculate shoulder angle
     body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
-    hipShoElb = calculate_left_hip_shoulder_elbow_angle(image)
-    left_hip_x = get_left_hip_x(image)
-    left_hip_y = get_left_hip_y(image)
-    left_hip_z = get_left_hip_z(image)
-    leftShoulderAngle = dot_prod_angle(get_left_elbow_x_y_z(image), get_left_shoulder_x_y_z(image), get_left_hip_x_y_z(image))
-    leftArmAngle = dot_prod_angle(get_left_wrist_x_y_z(image), get_left_elbow_x_y_z(image), get_left_shoulder_x_y_z(image)) 
+    hipShoElb = calculate_left_hip_shoulder_elbow_angle()
+    left_hip_x = get_left_hip_x()
+    left_hip_y = get_left_hip_y()
+    left_hip_z = get_left_hip_z()
+    leftShoulderAngle = dot_prod_angle(get_left_elbow_x_y_z(), get_left_shoulder_x_y_z(), get_left_hip_x_y_z())
+    leftArmAngle = dot_prod_angle(get_left_wrist_x_y_z(), get_left_elbow_x_y_z(), get_left_shoulder_x_y_z()) 
     left_arm_bicep_force = calculate_arm_force(leftShoulderAngle, leftArmAngle, weightAdded)
     test_num = leftArmAngle
     #print("test num updated")
 
 
-    user_max_mpu = get_distance_fingertip_to_fingertip(image)
+    user_max_mpu = get_distance_fingertip_to_fingertip()
     m_to_mpu_ratio = user_height/user_max_mpu #cm per mpu
     #print("ratio: " + str(m_to_mpu_ratio))
 
