@@ -6,6 +6,8 @@ from PIL import Image, ImageTk
 import numpy as np
 import time
 import math
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 # Initialize MediaPipe Pose
@@ -32,7 +34,13 @@ b = forearm * 0.11
 weightForearm = user_weight * 0.023
 weightAdded = 0
 developer_mode = False  # Developer mode state
-
+force_data = 0
+angle_data = 0
+leftArmAngle = 0
+left_arm_bicep_force = 0
+time_to_get_position_var = 0
+time_simulation_var = 0
+start_time = 0
 
 
 
@@ -746,7 +754,6 @@ def calculate_arm_force(thetaUpper, thetaArm, weightAdded):
         print("Bicep Force: " + str(force))
     return force
 
-
 def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
@@ -775,7 +782,7 @@ def init_data_update(image):
 
 
 def data_update(image):
-    global user_height, user_depth
+    global user_height, user_depth, left_arm_bicep_force, leftArmAngle
     """
     This method updates all of the input and output data every time its called
     """
@@ -812,7 +819,7 @@ def data_update(image):
 
 
     #(((init_distance_hip_shoulder/init_distance_shoulder))-(((init_distance_hip_shoulder/init_distance_shoulder) * (abs(body_rotation_y-90))/90)))
-            
+    
 
 def update_labels():
     """
@@ -832,53 +839,68 @@ def update_labels():
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time, do_once, wait_for_update, once
-    do_once = False
+    global last_update_time, do_once, wait_for_update, once, leftArmAngle, left_arm_bicep_force, start_time
 
+    do_once = False
+    # Start the timer when update_image is first called
+    if start_time == 0:
+        start_time = time.time()
+
+    # Calculate the elapsed time since the start
+    elapsed_time = time.time() - start_time
+
+    # Stop the function after 10 seconds
+    if elapsed_time > time_simulation_active:
+        print(str(time_simulation_active) + " seconds have elapsed, stopping the update.")
+        cap.release()
+        cv2.destroyAllWindows()
+        #root.destroy()
+        return # Exit the function to stop the loop
 
     if last_update_time == 0:  # Check if this is the first time update_image is called
-        time.sleep(5)  # Wait for 5 seconds
+        time.sleep(1)  # Wait for 5 seconds
         last_update_time = time.time()  # Update last_update_time to current time
         do_once = True
 
+    if root.winfo_exists():
+        if ret:
+            # Process the image and detect the pose
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(image)
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    if ret:
-        # Process the image and detect the pose
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = pose.process(image)
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            if wait_for_update > 30:
+                if once:
+                    init_data_update(image)
+                    if developer_mode:
+                        print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
+                    once = False
 
-        if wait_for_update > 30:
-            if once:
-                init_data_update(image)
-                if developer_mode:
-                    print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
-                once = False
+                current_time = time.time()
+                if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
+                    if developer_mode:
+                        print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
+                    data_update(image) #Updating data to new vals   
+                    update_labels() # Update data labels
+                    last_update_time = current_time  # Update the last update time
 
-            current_time = time.time()
-            if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
-                if developer_mode:
-                    print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
-                data_update(image) #Updating data to new vals   
-                update_labels() # Update data labels
-                last_update_time = current_time  # Update the last update time
+            wait_for_update += wait_for_update + 1
 
-        wait_for_update += wait_for_update + 1
+            # Draw the pose annotations
+            if results.pose_landmarks:
+                mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-        # Draw the pose annotations
-        if results.pose_landmarks:
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            # Convert the image to ImageTk format
+            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            image_tk = ImageTk.PhotoImage(image=image)
 
-        # Convert the image to ImageTk format
-        image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        image_tk = ImageTk.PhotoImage(image=image)
-
-        # Update the image on the label
-        video_label.config(image=image_tk)
-        video_label.image = image_tk
-                
-    root.after(10, update_image)  # Repeat after an interval
+            # Update the image on the label
+            video_label.config(image=image_tk)
+            video_label.image = image_tk
+            plot_graph()
+                    
+        root.after(10, update_image)  # Repeat after an interval
 
 
 
@@ -894,52 +916,137 @@ def update_image():
 Start up sequence
 \/ \/ \/
 """
-def start_screen():
-    global user_weight, user_height, user_depth, weightAdded, developer_mode
+# Main window setup
+main_window = tk.Tk()
+main_window.title("Muscle Force Calculator")
+main_window.geometry("450x350")
 
-    def on_submit():
-        try:
-            global user_weight, user_height, user_depth, weightAdded, developer_mode
-            user_weight = float(weight_entry.get())
-            user_height = float(height_entry.get())
-            user_depth = float(depth_entry.get())
-            weightAdded = float(weight_holding_entry.get())
-            developer_mode = dev_mode_var.get() == 1
-            print(f"User Weight: {user_weight} kg, User Height: {user_height} cm, User Depth: {user_depth} cm, Weight Holding: {weightAdded} kg")
-            start_window.destroy()  # Close the start screen
-        except ValueError:
-            print("Please enter valid numbers for weight, height, and depth.")
 
-    start_window = tk.Tk()
-    start_window.title("User Data Input")
 
-    ttk.Label(start_window, text="Enter Your Weight (kg):").pack(padx=10, pady=5)
-    weight_entry = ttk.Entry(start_window)
-    weight_entry.pack(padx=10, pady=5)
+def show_data_input():
+    # Hide the start frame and show the data input frame
+    start_frame.pack_forget()
+    data_input_frame.pack(fill='both', expand=True)
 
-    ttk.Label(start_window, text="Enter Your Height (cm):").pack(padx=10, pady=5)
-    height_entry = ttk.Entry(start_window)
-    height_entry.pack(padx=10, pady=5)
+def show_settings():
+    # Hide the data input frame and show the settings frame
+    data_input_frame.pack_forget()
+    settings_frame.pack(fill='both', expand=True)
 
-    ttk.Label(start_window, text="Enter Your Distance from Camera (cm):").pack(padx=10, pady=5)
-    depth_entry = ttk.Entry(start_window)
-    depth_entry.pack(padx=10, pady=5)
+# Countdown frame setup
+countdown_frame = ttk.Frame(main_window)
+countdown_label = ttk.Label(countdown_frame, text="Starting in 0 seconds", font=("Helvetica", 16))
+countdown_label.pack(padx=20, pady=20)
 
-    ttk.Label(start_window, text="Enter The Weight You're Holding (kg):").pack(padx=10, pady=5)
-    weight_holding_entry = ttk.Entry(start_window)
-    weight_holding_entry.pack(padx=10, pady=5)
 
-    # Checkbox for Developer Mode
-    dev_mode_var = tk.IntVar()
-    dev_mode_check = ttk.Checkbutton(start_window, text="Developer Mode", variable=dev_mode_var)
-    dev_mode_check.pack(padx=10, pady=5)
+def on_settings_submit():
+    global time_to_get_in_position, time_simulation_active
 
-    ttk.Button(start_window, text="Submit", command=on_submit).pack(padx=10, pady=15)
+    time_to_get_in_position = int(time_to_get_position_var.get())
+    time_simulation_active = int(time_simulation_var.get())
+    print(f"Time to Get in Position: {time_to_get_in_position} seconds, Time Simulation Active: {time_simulation_active} seconds")
 
-    start_window.mainloop()
+    # Hide the current settings frame and show the countdown frame
+    settings_frame.pack_forget()
+    countdown_frame.pack(fill='both', expand=True)
+    
+    # Start the countdown
+    countdown(time_to_get_in_position)
 
-# Start screen to collect user data
-start_screen()
+def countdown(time_left):
+    if time_left > 0:
+        countdown_label.config(text=f"Starting in {time_left} seconds")
+        countdown_frame.after(1000, countdown, time_left - 1)
+    else:
+        countdown_label.config(text="Starting now!")
+        main_window.after(1000, main_window.destroy)  # Close the window after 1 second
+
+
+# Default value for time_to_get_in_position
+# Add a new frame for additional settings (initially hidden)
+settings_frame = ttk.Frame(main_window)
+
+# Time to Get in Position Dropdown
+time_to_get_position_var = tk.StringVar()
+time_to_get_position_label = ttk.Label(settings_frame, text="Time To Get In Position(sec):")
+time_to_get_position_label.pack(padx=10, pady=5)
+time_to_get_position_dropdown = ttk.Combobox(settings_frame, textvariable=time_to_get_position_var, 
+                                             values=[5, 10, 20, 30, 60])
+time_to_get_position_dropdown.pack(padx=10, pady=5)
+
+# Time Simulation Active Dropdown
+time_simulation_var = tk.StringVar()
+time_simulation_label = ttk.Label(settings_frame, text="Time Simulation Active(sec):")
+time_simulation_label.pack(padx=10, pady=5)
+time_simulation_dropdown = ttk.Combobox(settings_frame, textvariable=time_simulation_var,
+                                        values=[30, 60, 120, 300, 1200])
+time_simulation_dropdown.pack(padx=10, pady=5)
+
+# Settings Submit Button
+settings_submit_button = ttk.Button(settings_frame, text="Submit", command=on_settings_submit)
+settings_submit_button.pack(padx=10, pady=15)
+
+
+# Modify the on_submit function to show the settings frame
+def on_submit():
+    try:
+        global user_weight, user_height, user_depth, weightAdded, developer_mode
+        user_weight = float(weight_entry.get())
+        user_height = float(height_entry.get())
+        user_depth = float(depth_entry.get())
+        weightAdded = float(weight_holding_entry.get())
+        developer_mode = dev_mode_var.get() == 1
+        print(f"User Weight: {user_weight} kg, User Height: {user_height} cm, User Depth: {user_depth} cm, Weight Holding: {weightAdded} kg")
+        show_settings()  # Show the settings frame instead of destroying the window
+    except ValueError:
+        print("Please enter valid numbers for weight, height, and depth.")
+
+# Start frame
+start_frame = ttk.Frame(main_window)
+start_frame.pack(fill='both', expand=True)
+
+title_label = ttk.Label(start_frame, text="Muscle Force Calculator", font=("Helvetica", 16))
+title_label.pack(padx=20, pady=20)
+
+start_button = ttk.Button(start_frame, text="Start", command=show_data_input)
+start_button.pack(side=tk.BOTTOM, padx=10, pady=10)
+
+# Data input frame setup
+data_input_frame = ttk.Frame(main_window)
+
+# Left column for height and depth
+left_column = ttk.Frame(data_input_frame)
+left_column.pack(side=tk.LEFT, fill='both', expand=True, padx=10, pady=10)
+
+ttk.Label(left_column, text="Enter Your Height (cm):").pack(padx=10, pady=5)
+height_entry = ttk.Entry(left_column)
+height_entry.pack(padx=10, pady=5)
+
+ttk.Label(left_column, text="Enter Your Distance from Camera (cm):").pack(padx=10, pady=5)
+depth_entry = ttk.Entry(left_column)
+depth_entry.pack(padx=10, pady=5)
+
+# Right column for user weight, weight holding, and developer mode
+right_column = ttk.Frame(data_input_frame)
+right_column.pack(side=tk.LEFT, fill='both', expand=True, padx=10, pady=10)
+
+ttk.Label(right_column, text="Enter Your Weight (kg):").pack(padx=10, pady=5)
+weight_entry = ttk.Entry(right_column)
+weight_entry.pack(padx=10, pady=5)
+
+ttk.Label(right_column, text="Enter The Weight You're Holding (kg):").pack(padx=10, pady=5)
+weight_holding_entry = ttk.Entry(right_column)
+weight_holding_entry.pack(padx=10, pady=5)
+
+dev_mode_var = tk.IntVar()
+dev_mode_check = ttk.Checkbutton(right_column, text="Developer Mode", variable=dev_mode_var)
+dev_mode_check.pack(padx=10, pady=5)
+
+submit_button = ttk.Button(right_column, text="Next", command=on_submit)
+submit_button.pack(side=tk.BOTTOM, padx=10, pady=10)
+
+# Start the Tkinter main loop
+main_window.mainloop()
 
 
 """
@@ -969,13 +1076,66 @@ main_frame.pack(padx=10, pady=10, fill='both', expand=True)
 
 # Create a label in the main frame for video feed
 video_label = ttk.Label(main_frame)
-video_label.pack(side=tk.LEFT, padx=10, pady=10)
+video_label.pack(side=tk.LEFT, fill='both', expand=True, padx=10, pady=10)
 
 # Create a frame for data output
 data_frame = ttk.LabelFrame(main_frame, text="Data Output")
 data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
 data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
-data_frame.config(width=400, height=200)  # Set the width and height of the frame
+data_frame.config(width=400, height=600)  # Set the width and height of the frame
+
+graph_frame = ttk.Frame(data_frame)
+graph_frame.pack(side=tk.BOTTOM, fill='both', expand=False, padx=10, pady=10)
+graph_frame.config(width=400, height=300)  # Set the width and height of the frame
+
+
+
+
+# Create a matplotlib figure and a canvas
+fig = plt.Figure(figsize=(5, 4), dpi=100)
+canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+# Initialize the plot data
+I_values = np.arange(0, 180)  # Elbow Angle values from -90 to 90
+current_index = 0  # Start with the first point
+plotted_points = []  # List to store the points that have been plotted
+
+plotted_points = []  # Initialize outside of the plot_graph function to store all points
+
+def plot_graph():
+    global leftArmAngle, left_arm_bicep_force
+
+    # Check if there's new data to plot and add it to the list
+    if leftArmAngle != 0 and left_arm_bicep_force != 0:
+        plotted_points.append((leftArmAngle, left_arm_bicep_force))
+
+    # Clear the previous figure
+    fig.clear()
+
+    # Create a new plot
+    ax = fig.add_subplot(111)
+
+    # Plot all points in the list
+    for point in plotted_points:
+        ax.scatter(*point, color='blue')
+
+    ax.set_title("Elbow Angle vs Bicep Force")
+    ax.set_xlabel("Elbow Angle")
+    ax.set_ylabel("Bicep Force")
+    ax.set_xlim(0, 180)  # Set the x-axis limits based on your data
+    ax.set_ylim(0, max([8100] + [force for _, force in plotted_points]))  # Set the y-axis limit based on the maximum force
+
+    # Draw the updated graph
+    canvas.draw()
+
+    # Reset the current data point
+    leftArmAngle = 0
+    left_arm_bicep_force = 0
+    # Plot the graph as soon as the program runs
+
+
+
+
 
 
 # Labels for displaying data
@@ -1037,7 +1197,6 @@ user_depth_entry.pack(side=tk.BOTTOM, padx=5, pady=5)
 
 # Open the webcam
 cap = cv2.VideoCapture(0)
-
 
 # Start the periodic update of the image and data
 update_image()
