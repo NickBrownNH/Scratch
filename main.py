@@ -20,7 +20,7 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
-user_height = 151.00 #cm
+user_height = 0 #cm
 user_depth = 150 #cm
 wait_for_update = 0
 once = True
@@ -41,6 +41,9 @@ left_arm_bicep_force = 0
 time_to_get_position_var = 0
 time_simulation_var = 0
 start_time = 0
+twoStepDone = False
+twoStepCountDown = 10
+isGraphOn = False
 
 
 
@@ -743,6 +746,7 @@ def dot_prod_angle(matrixA, matrixB, matrixC):
 
 
 def calculate_arm_force(thetaUpper, thetaArm, weightAdded):
+
     thetaB = 180 - ((b - upperarm * np.cos(thetaUpper))/ (np.sqrt(b**2 + upperarm**2 - 2 * b * upperarm * np.cos(thetaUpper))) )
     leverArmFA = cfg * np.sin(thetaUpper + thetaArm - 90)
     leverArmAdd = forearm * np.sin(thetaUpper + thetaArm - 90)
@@ -778,6 +782,30 @@ def init_data_update(image):
     #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
     init_user_max_mpu = get_distance_fingertip_to_fingertip()
     m_to_mpu_ratio = user_height/init_user_max_mpu #cm per mpu
+
+def init2_data_update(image):
+    """
+    This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
+    """
+    global init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2, image_rgb, results, landmarks
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+
+
+    init_distance_shoulder2 = get_distance_right_shoulder_to_left_shoulder()
+
+    init_distance_hip_shoulder2 = get_distance_right_hip_to_right_shoulder()
+    init_left_distance_hip_shoulder2 = get_distance_left_hip_to_left_shoulder()
+    init_height_diff_right_shoulder_to_right_hip2 = get_height_diff_right_shoulder_to_right_hip()
+    init_head_width2 = get_head_width()
+    init_nose_eye_ear_angle2 = calculate_nose_eyeInR_earR()
+    init_right_shoulder_to_right_elbow2 = get_distance_right_shoulder_to_right_elbow()
+    init_right_elbow_to_right_wrist2 = get_distance_right_elbow_to_right_wrist()
+    init_left_shoulder_to_left_elbow2 = get_distance_left_shoulder_to_left_elbow()
+    init_left_elbow_to_left_wrist2 = get_distance_left_elbow_to_left_wrist()
+    #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
+    init_user_max_mpu2 = get_distance_fingertip_to_fingertip()
     
 
 
@@ -808,6 +836,7 @@ def data_update(image):
     left_hip_z = get_left_hip_z()
     leftShoulderAngle = dot_prod_angle(get_left_elbow_x_y_z(), get_left_shoulder_x_y_z(), get_left_hip_x_y_z())
     leftArmAngle = dot_prod_angle(get_left_wrist_x_y_z(), get_left_elbow_x_y_z(), get_left_shoulder_x_y_z()) 
+    print("bicep force input: left shoulder angle: "+str(leftShoulderAngle)+", left arm angle: "+str(leftArmAngle)+", weight added: " + str(weightAdded))
     left_arm_bicep_force = calculate_arm_force(leftShoulderAngle, leftArmAngle, weightAdded)
     test_num = leftArmAngle
     #print("test num updated")
@@ -825,21 +854,22 @@ def update_labels():
     """
     This method updates the labels every time it's called
     """
-    if developer_mode:
-        direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-        rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
-        body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
-        body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
-        body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
-    bicep_force_label.config(text=f"Bicep Force: {left_arm_bicep_force if left_arm_bicep_force else 'N/A'}")
-    test_num_label.config(text=f"Left Arm Angle: {test_num if test_num else 'N/A'}")
-    #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
+    if twoStepDone:
+        if developer_mode:
+            direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
+            rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
+            body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
+            body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
+            body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
+        bicep_force_label.config(text=f"Bicep Force: {left_arm_bicep_force if left_arm_bicep_force else 'N/A'}")
+        test_num_label.config(text=f"Left Arm Angle: {test_num if test_num else 'N/A'}")
+        #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
 
 
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time, do_once, wait_for_update, once, leftArmAngle, left_arm_bicep_force, start_time
+    global last_update_time, do_once, wait_for_update, once, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn
 
     do_once = False
     # Start the timer when update_image is first called
@@ -858,7 +888,7 @@ def update_image():
         return # Exit the function to stop the loop
 
     if last_update_time == 0:  # Check if this is the first time update_image is called
-        time.sleep(1)  # Wait for 5 seconds
+        time.sleep(1)  # Wait for 1 seconds
         last_update_time = time.time()  # Update last_update_time to current time
         do_once = True
 
@@ -876,9 +906,17 @@ def update_image():
                     if developer_mode:
                         print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
                     once = False
-
                 current_time = time.time()
+                
                 if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
+                    if elapsed_time <= 5:
+                        init2_data_update(image)                   
+                    elif  elapsed_time <= 10:
+                        instruct_label.config(text=f"Please Step 1 Foot Back To Starting Position\nSimulation Starting in {(round(twoStepCountDown - elapsed_time, 1))}")
+                    else:
+                        instruct_label.config(text=f"Simulation Started")
+                        twoStepDone = True
+
                     if developer_mode:
                         print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
                     data_update(image) #Updating data to new vals   
@@ -898,7 +936,9 @@ def update_image():
             # Update the image on the label
             video_label.config(image=image_tk)
             video_label.image = image_tk
-            plot_graph()
+            if twoStepDone:
+                if isGraphOn:
+                    plot_graph()
                     
         root.after(10, update_image)  # Repeat after an interval
 
@@ -990,14 +1030,23 @@ settings_submit_button.pack(padx=10, pady=15)
 # Modify the on_submit function to show the settings frame
 def on_submit():
     try:
-        global user_weight, user_height, user_depth, weightAdded, developer_mode
+        global user_weight, user_height, user_depth, weightAdded, developer_mode, isGraphOn, forearm, upperarm, cfg, b, weightForearm
         user_weight = float(weight_entry.get())
-        user_height = float(height_entry.get())
+        user_height = float(height_entry.get()) * 0.9588 #Mediapipe measures from kunckle to kunckle not fingertip to fingertip
         user_depth = float(depth_entry.get())
         weightAdded = float(weight_holding_entry.get())
         developer_mode = dev_mode_var.get() == 1
+        isGraphOn = graph_on_var.get() == 1
         print(f"User Weight: {user_weight} kg, User Height: {user_height} cm, User Depth: {user_depth} cm, Weight Holding: {weightAdded} kg")
         show_settings()  # Show the settings frame instead of destroying the window
+
+        #Updating initial values
+        forearm = (user_height*0.01) * 0.216
+        upperarm = (user_height*0.01) * 0.173
+        cfg = forearm * 0.432
+        b = forearm * 0.11
+        weightForearm = user_weight * 0.023
+
     except ValueError:
         print("Please enter valid numbers for weight, height, and depth.")
 
@@ -1042,6 +1091,10 @@ dev_mode_var = tk.IntVar()
 dev_mode_check = ttk.Checkbutton(right_column, text="Developer Mode", variable=dev_mode_var)
 dev_mode_check.pack(padx=10, pady=5)
 
+graph_on_var = tk.IntVar()
+graph_on_check = ttk.Checkbutton(right_column, text="Enable Graph", variable=graph_on_var)
+graph_on_check.pack(padx=10, pady=5)
+
 submit_button = ttk.Button(right_column, text="Next", command=on_submit)
 submit_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
@@ -1073,6 +1126,9 @@ root.title("Pose Detection with Data Output")
 # Create the main frame
 main_frame = ttk.Frame(root)
 main_frame.pack(padx=10, pady=10, fill='both', expand=True)
+
+instruct_label = ttk.Label(main_frame, text="Please Step 1 Foot Forward")
+instruct_label.pack(side=tk.BOTTOM, fill='both', expand=True, padx=10, pady=10)
 
 # Create a label in the main frame for video feed
 video_label = ttk.Label(main_frame)
@@ -1161,6 +1217,7 @@ bicep_force_label.pack(anchor=tk.W)
 
 test_num_label = ttk.Label(data_frame, text="Test Num: N/A")
 test_num_label.pack(anchor=tk.W)
+
 
 # Add User Height Input UI Elements
 user_height_frame = ttk.Frame(main_frame)
