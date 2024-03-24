@@ -603,11 +603,11 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
             if eye_ear_angle <= init_eye_ear_angle:
                 if developer_mode:
                     print("up")
-                return round((180-((height_diff_hip_shoulder / init_val)*90)*2), 4) #init_val = ? add arcsin 
+                return round((180-(np.arcsin(abs(height_diff_hip_shoulder / init_val))*90)), 4) #init_val = ? add arcsin - took out *2 after *90)
             else:
                 if developer_mode:
                     print("down")
-                return round((((height_diff_hip_shoulder / init_val)*90)*2)-180, 4) #init_val = ?
+                return round(((np.arcsin(abs(height_diff_hip_shoulder / init_val))*90))-180, 4) #init_val = ? - took out *2 after *90)
     return 0
 
 
