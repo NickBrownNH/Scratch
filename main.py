@@ -599,16 +599,45 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
     Calculate the body's pitch based on height difference between the right should and the right hip over the width of the head 
     and the direction facing(up or down) to notate whether the user is leaning forward or backward.
     """
+
+    """
     if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
             if eye_ear_angle <= init_eye_ear_angle:
                 if developer_mode:
                     print("up")
-                return round((180-(np.arcsin(abs(height_diff_hip_shoulder / init_val))*90)), 4) #init_val = ? add arcsin - took out *2 after *90)
+                return round(((180-(height_diff_hip_shoulder / init_val), 0)*90), 4) #init_val = ? add arcsin - took out *2 after *90)
             else:
                 if developer_mode:
                     print("down")
-                return round(((np.arcsin(abs(height_diff_hip_shoulder / init_val))*90))-180, 4) #init_val = ? - took out *2 after *90)
+                return round((((height_diff_hip_shoulder / init_val), 0)*90)-180, 4) #init_val = ? - took out *2 after *90)
     return 0
+    """
+
+    if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
+
+        print("height diff: " + str(height_diff_hip_shoulder) + ", init_val: " + str(init_val))
+        if height_diff_hip_shoulder > init_val:
+            ratio = 1  # Adjusted to use head_width for the arc sine calculation
+        else:
+            ratio = (height_diff_hip_shoulder/init_val)  # Adjusted to use head_width for the arc sine calculation
+        angle_in_radians = math.asin(ratio)
+        angle_in_degrees = math.degrees(angle_in_radians)
+
+        if eye_ear_angle <= init_eye_ear_angle:
+            if developer_mode:
+                print("up")
+            # Adjust the calculation to use the angle from arcsin
+            return round((angle_in_degrees), 4)
+        else:
+            if developer_mode:
+                print("down")
+            # Adjust the calculation to use the angle from arcsin
+            return round(((angle_in_degrees))-180, 4)
+    
+    return 0
+
+
+
 
 
 def calculate_body_roll():
@@ -807,6 +836,21 @@ def init2_data_update(image):
     #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
     init_user_max_mpu2 = get_distance_fingertip_to_fingertip()
     
+def depth_ratio():
+    global init_distance_shoulder_ratio, init_distance_hip_shoulder_ratio, init_left_distance_hip_shoulder_ratio, init_height_diff_right_shoulder_to_right_hip_ratio, init_head_width_ratio, init_nose_eye_ear_angle_ratio, init_right_shoulder_to_right_elbow_ratio, init_right_elbow_to_right_wrist_ratio, init_left_shoulder_to_left_elbow_ratio, init_left_elbow_to_left_wrist_ratio, init_user_max_mpu_ratio, init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2
+
+    init_distance_shoulder_ratio = init_distance_shoulder + init_distance_shoulder2
+    init_distance_hip_shoulder_ratio = init_distance_hip_shoulder + init_distance_hip_shoulder2
+    init_left_distance_hip_shoulder_ratio = init_left_distance_hip_shoulder + init_left_distance_hip_shoulder2
+    init_height_diff_right_shoulder_to_right_hip_ratio = init_height_diff_right_shoulder_to_right_hip + init_height_diff_right_shoulder_to_right_hip2
+    init_head_width_ratio = init_head_width + init_head_width2
+    init_nose_eye_ear_angle_ratio = init_nose_eye_ear_angle + init_nose_eye_ear_angle2
+    init_right_shoulder_to_right_elbow_ratio = init_right_shoulder_to_right_elbow + init_right_shoulder_to_right_elbow2
+    init_right_elbow_to_right_wrist_ratio = init_right_elbow_to_right_wrist + init_right_elbow_to_right_wrist2
+    init_left_shoulder_to_left_elbow_ratio = init_left_shoulder_to_left_elbow + init_left_shoulder_to_left_elbow2
+    init_left_elbow_to_left_wrist_ratio = init_left_elbow_to_left_wrist + init_left_elbow_to_left_wrist2
+    init_user_max_mpu_ratio = init_user_max_mpu + init_user_max_mpu2
+    
 
 
 def data_update(image):
@@ -900,7 +944,7 @@ def update_image():
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-            if wait_for_update > 30:
+            if wait_for_update > 100:
                 if once:
                     init_data_update(image)
                     if developer_mode:
@@ -908,14 +952,16 @@ def update_image():
                     once = False
                 current_time = time.time()
                 
-                if current_time - last_update_time >= 0.5:  # Check if 0.5 second has passed
+                if current_time - last_update_time >= 2.5:  # Check if 0.5 second has passed
                     if elapsed_time <= 5:
-                        init2_data_update(image)                   
+                        init2_data_update(image)
+                        depth_ratio()                   
                     elif  elapsed_time <= 10:
                         instruct_label.config(text=f"Please Step 1 Foot Back To Starting Position\nSimulation Starting in {(round(twoStepCountDown - elapsed_time, 1))}")
                     else:
                         instruct_label.config(text=f"Simulation Started")
                         twoStepDone = True
+
 
                     if developer_mode:
                         print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
