@@ -24,6 +24,7 @@ user_height = 0 #cm
 user_depth = 150 #cm
 wait_for_update = 0
 once = True
+once2 = True
 left_shoulder_z = 0
 left_elbow_z = 0
 user_weight = 58.967 #kg
@@ -44,6 +45,7 @@ start_time = 0
 twoStepDone = False
 twoStepCountDown = 10
 isGraphOn = False
+depth_ratio = 0
 
 
 
@@ -489,7 +491,7 @@ def get_left_elbow_x_y_z():
 
         left_elbow_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].x * m_to_mpu_ratio
         left_elbow_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_ELBOW].y * m_to_mpu_ratio
-        left_elbow_z = calculate_z(left_shoulder_z, init_left_shoulder_to_left_elbow, get_distance_left_shoulder_to_left_elbow(), 0, body_pitch, hipShoElb)
+        left_elbow_z = calculate_z(left_shoulder_z, init_left_shoulder_to_left_elbow, init_left_shoulder_to_left_elbow3, get_distance_left_shoulder_to_left_elbow(), 0, body_pitch, hipShoElb)
         
         # Calculate the distance
         xyz = [left_elbow_x, left_elbow_y, left_elbow_z]
@@ -515,7 +517,7 @@ def get_left_wrist_x_y_z():
 
         left_wrist_x = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].x * m_to_mpu_ratio
         left_wrist_y = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y * m_to_mpu_ratio
-        left_wrist_z = calculate_z(left_elbow_z, init_left_elbow_to_left_wrist, get_distance_left_elbow_to_left_wrist(), 0, body_pitch, hipShoElb)
+        left_wrist_z = calculate_z(left_elbow_z, init_left_elbow_to_left_wrist, init_left_elbow_to_left_wrist3, get_distance_left_elbow_to_left_wrist(), 0, body_pitch, hipShoElb)
         
         # Calculate the distance
         xyz = [left_wrist_x, left_wrist_y, left_wrist_z]
@@ -531,16 +533,18 @@ def get_left_wrist_x_y_z():
 # print("Distance:", distance)
 
 
-def calculate_z(z_init, max_length, actual_length, angle, pitch, hipShoElb):
+def calculate_z(z_init, max_length, max_length3, actual_length, angle, pitch, hipShoElb):
     z = 0
-    max_len = max_length*m_to_mpu_ratio
-    max_len = max_len + (max_len*0.9*abs(pitch/90)) + (max_len*0.47*abs((90-hipShoElb)/90))
+    max_len1 = max_length*m_to_mpu_ratio
+    max_len3 = max_length3*m_to_mpu_ratio
+    max_len = max_len1 + (depth_ratio*(init_distance_hip_shoulder*abs(pitch/90))) + ((max_len3-max_len1)*abs((90-hipShoElb)/90))
     act_len = actual_length*m_to_mpu_ratio
+
     if angle > 0:
         if act_len >= max_len: 
             act_len = max_len
         if developer_mode:    
-            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu))
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
         z = z_init + np.sqrt(abs((max_len)**2 - (act_len)**2))
 
         return z
@@ -549,7 +553,7 @@ def calculate_z(z_init, max_length, actual_length, angle, pitch, hipShoElb):
             act_len = max_len
         z = z_init + np.sqrt((max_len)**2 - (act_len)**2)
         if developer_mode:
-            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
+            print("z_init: " + str(z_init) + ", max_length1: " + str(max_len1) + ", max_length3: " + str(max_len3) + ", act_max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", pitch angle: " + str(pitch) + ", shoulder angle: " + str(hipShoElb) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
         return z
     
 def calculate_z_angle(z_init, max_length, angle):
@@ -612,14 +616,21 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
                 return round((((height_diff_hip_shoulder / init_val), 0)*90)-180, 4) #init_val = ? - took out *2 after *90)
     return 0
     """
+    hipShoElb = calculate_left_hip_shoulder_elbow_angle()
+    max_height = init_height_diff_right_shoulder_to_right_hip3 + ((init_height_diff_right_shoulder_to_right_hip-init_height_diff_right_shoulder_to_right_hip3)*(hipShoElb-10)/90)
+
+
+
+
 
     if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
 
-        print("height diff: " + str(height_diff_hip_shoulder) + ", init_val: " + str(init_val))
-        if height_diff_hip_shoulder > init_val:
+
+        print("height diff: " + str(height_diff_hip_shoulder) + ", max height: " + str(max_height) + ", arms down: " + str(init_height_diff_right_shoulder_to_right_hip3) + ", arms up: " + str(init_height_diff_right_shoulder_to_right_hip))
+        if height_diff_hip_shoulder > max_height:
             ratio = 1  # Adjusted to use head_width for the arc sine calculation
         else:
-            ratio = (height_diff_hip_shoulder/init_val)  # Adjusted to use head_width for the arc sine calculation
+            ratio = (height_diff_hip_shoulder/max_height)  # Adjusted to use head_width for the arc sine calculation
         angle_in_radians = math.asin(ratio)
         angle_in_degrees = math.degrees(angle_in_radians)
 
@@ -787,70 +798,230 @@ def calculate_arm_force(thetaUpper, thetaArm, weightAdded):
         print("Bicep Force: " + str(force))
     return force
 
+
+
 def init_data_update(image):
     """
-    This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
+    This method is called once before the program begins updating calculations so that initial values can be found for the user's specific body ratios
     """
     global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, image_rgb, results, landmarks
+    
+    timesChecked = 0
+    
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
 
+    # Initialize sums for each measurement
+    sum_distance_shoulder = 0
+    sum_distance_hip_shoulder = 0
+    sum_left_distance_hip_shoulder = 0
+    sum_height_diff_right_shoulder_to_right_hip = 0
+    sum_head_width = 0
+    sum_nose_eye_ear_angle = 0
+    sum_right_shoulder_to_right_elbow = 0
+    sum_right_elbow_to_right_wrist = 0
+    sum_left_shoulder_to_left_elbow = 0
+    sum_left_elbow_to_left_wrist = 0
+    sum_user_max_mpu = 0
 
-    init_distance_shoulder = get_distance_right_shoulder_to_left_shoulder()
+    while timesChecked < 10:
+        results = pose.process(image_rgb)
+        landmarks = results.pose_landmarks.landmark
 
-    init_distance_hip_shoulder = get_distance_right_hip_to_right_shoulder()
-    init_left_distance_hip_shoulder = get_distance_left_hip_to_left_shoulder()
-    init_height_diff_right_shoulder_to_right_hip = get_height_diff_right_shoulder_to_right_hip()
-    init_head_width = get_head_width()
-    init_nose_eye_ear_angle = calculate_nose_eyeInR_earR()
-    init_right_shoulder_to_right_elbow = get_distance_right_shoulder_to_right_elbow()
-    init_right_elbow_to_right_wrist = get_distance_right_elbow_to_right_wrist()
-    init_left_shoulder_to_left_elbow = get_distance_left_shoulder_to_left_elbow()
-    init_left_elbow_to_left_wrist = get_distance_left_elbow_to_left_wrist()
-    #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
-    init_user_max_mpu = get_distance_fingertip_to_fingertip()
-    m_to_mpu_ratio = user_height/init_user_max_mpu #cm per mpu
+        # Accumulate the sums
+        sum_distance_shoulder += get_distance_right_shoulder_to_left_shoulder()
+        sum_distance_hip_shoulder += get_distance_right_hip_to_right_shoulder()
+        sum_left_distance_hip_shoulder += get_distance_left_hip_to_left_shoulder()
+        sum_height_diff_right_shoulder_to_right_hip += get_height_diff_right_shoulder_to_right_hip()
+        sum_head_width += get_head_width()
+        sum_nose_eye_ear_angle += calculate_nose_eyeInR_earR()
+        sum_right_shoulder_to_right_elbow += get_distance_right_shoulder_to_right_elbow()
+        sum_right_elbow_to_right_wrist += get_distance_right_elbow_to_right_wrist()
+        sum_left_shoulder_to_left_elbow += get_distance_left_shoulder_to_left_elbow()
+        sum_left_elbow_to_left_wrist += get_distance_left_elbow_to_left_wrist()
+        sum_user_max_mpu += get_distance_fingertip_to_fingertip()
+        
+        timesChecked += 1
+
+    # Calculate averages
+    init_distance_shoulder = sum_distance_shoulder / timesChecked
+    init_distance_hip_shoulder = sum_distance_hip_shoulder / timesChecked
+    init_left_distance_hip_shoulder = sum_left_distance_hip_shoulder / timesChecked
+    init_height_diff_right_shoulder_to_right_hip = sum_height_diff_right_shoulder_to_right_hip / timesChecked
+    init_head_width = sum_head_width / timesChecked
+    init_nose_eye_ear_angle = sum_nose_eye_ear_angle / timesChecked
+    init_right_shoulder_to_right_elbow = sum_right_shoulder_to_right_elbow / timesChecked
+    init_right_elbow_to_right_wrist = sum_right_elbow_to_right_wrist / timesChecked
+    init_left_shoulder_to_left_elbow = sum_left_shoulder_to_left_elbow / timesChecked
+    init_left_elbow_to_left_wrist = sum_left_elbow_to_left_wrist / timesChecked
+    init_user_max_mpu = sum_user_max_mpu / timesChecked
+
+    m_to_mpu_ratio = user_height / init_user_max_mpu  # cm per mpu
 
 def init2_data_update(image):
     """
-    This method is called once before the program begins updating calculations so that initial values can be found for the user's specifc body ratios
+    This method is called once before the program begins updating calculations so that initial values can be found for the user's specific body ratios
     """
-    global init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2, image_rgb, results, landmarks
+    global init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2, m_to_mpu_ratio2, image_rgb, results, landmarks
+    timesChecked = 0
+
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = pose.process(image_rgb)
     landmarks = results.pose_landmarks.landmark
 
+    # Initialize sums for each measurement
+    sum_distance_shoulder2 = 0
+    sum_distance_hip_shoulder2 = 0
+    sum_left_distance_hip_shoulder2 = 0
+    sum_height_diff_right_shoulder_to_right_hip2 = 0
+    sum_head_width2 = 0
+    sum_nose_eye_ear_angle2 = 0
+    sum_right_shoulder_to_right_elbow2 = 0
+    sum_right_elbow_to_right_wrist2 = 0
+    sum_left_shoulder_to_left_elbow2 = 0
+    sum_left_elbow_to_left_wrist2 = 0
+    sum_user_max_mpu2 = 0
 
-    init_distance_shoulder2 = get_distance_right_shoulder_to_left_shoulder()
+    while timesChecked < 10:
+        results = pose.process(image_rgb)
+        landmarks = results.pose_landmarks.landmark
 
-    init_distance_hip_shoulder2 = get_distance_right_hip_to_right_shoulder()
-    init_left_distance_hip_shoulder2 = get_distance_left_hip_to_left_shoulder()
-    init_height_diff_right_shoulder_to_right_hip2 = get_height_diff_right_shoulder_to_right_hip()
-    init_head_width2 = get_head_width()
-    init_nose_eye_ear_angle2 = calculate_nose_eyeInR_earR()
-    init_right_shoulder_to_right_elbow2 = get_distance_right_shoulder_to_right_elbow()
-    init_right_elbow_to_right_wrist2 = get_distance_right_elbow_to_right_wrist()
-    init_left_shoulder_to_left_elbow2 = get_distance_left_shoulder_to_left_elbow()
-    init_left_elbow_to_left_wrist2 = get_distance_left_elbow_to_left_wrist()
-    #init_user_max_mpu = get_distance_left_fingertip_to_elbow(image) + get_distance_left_shoulder_to_left_elbow(image) + get_distance_right_shoulder_to_left_shoulder(image) + get_distance_right_shoulder_to_right_elbow(image) + get_distance_right_fingertip_to_elbow(image)
-    init_user_max_mpu2 = get_distance_fingertip_to_fingertip()
+        # Accumulate the sums
+        sum_distance_shoulder2 += get_distance_right_shoulder_to_left_shoulder()
+        sum_distance_hip_shoulder2 += get_distance_right_hip_to_right_shoulder()
+        sum_left_distance_hip_shoulder2 += get_distance_left_hip_to_left_shoulder()
+        sum_height_diff_right_shoulder_to_right_hip2 += get_height_diff_right_shoulder_to_right_hip()
+        sum_head_width2 += get_head_width()
+        sum_nose_eye_ear_angle2 += calculate_nose_eyeInR_earR()
+        sum_right_shoulder_to_right_elbow2 += get_distance_right_shoulder_to_right_elbow()
+        sum_right_elbow_to_right_wrist2 += get_distance_right_elbow_to_right_wrist()
+        sum_left_shoulder_to_left_elbow2 += get_distance_left_shoulder_to_left_elbow()
+        sum_left_elbow_to_left_wrist2 += get_distance_left_elbow_to_left_wrist()
+        sum_user_max_mpu2 += get_distance_fingertip_to_fingertip()
+        
+        timesChecked += 1
+
+    # Calculate averages
+    init_distance_shoulder2 = sum_distance_shoulder2 / timesChecked
+    init_distance_hip_shoulder2 = sum_distance_hip_shoulder2 / timesChecked
+    init_left_distance_hip_shoulder2 = sum_left_distance_hip_shoulder2 / timesChecked
+    init_height_diff_right_shoulder_to_right_hip2 = sum_height_diff_right_shoulder_to_right_hip2 / timesChecked
+    init_head_width2 = sum_head_width2 / timesChecked
+    init_nose_eye_ear_angle2 = sum_nose_eye_ear_angle2 / timesChecked
+    init_right_shoulder_to_right_elbow2 = sum_right_shoulder_to_right_elbow2 / timesChecked
+    init_right_elbow_to_right_wrist2 = sum_right_elbow_to_right_wrist2 / timesChecked
+    init_left_shoulder_to_left_elbow2 = sum_left_shoulder_to_left_elbow2 / timesChecked
+    init_left_elbow_to_left_wrist2 = sum_left_elbow_to_left_wrist2 / timesChecked
+    init_user_max_mpu2 = sum_user_max_mpu2 / timesChecked
+
+    m_to_mpu_ratio2 = user_height / init_user_max_mpu2  # cm per mpu
+
+
+
+def init3_data_update(image):
+    """
+    This method is called once before the program begins updating calculations so that initial values can be found for the user's specific body ratios
+    """
+    global init_distance_shoulder3, init_distance_hip_shoulder3, init_left_distance_hip_shoulder3, init_height_diff_right_shoulder_to_right_hip3, init_head_width3, init_nose_eye_ear_angle3, init_right_shoulder_to_right_elbow3, init_right_elbow_to_right_wrist3, init_left_shoulder_to_left_elbow3, init_left_elbow_to_left_wrist3, init_user_max_mpu3, m_to_mpu_ratio3, image_rgb, results, landmarks
+    timesChecked = 0
+
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = pose.process(image_rgb)
+    landmarks = results.pose_landmarks.landmark
+
+    # Initialize sums for each measurement
+    sum_distance_shoulder3 = 0
+    sum_distance_hip_shoulder3 = 0
+    sum_left_distance_hip_shoulder3 = 0
+    sum_height_diff_right_shoulder_to_right_hip3 = 0
+    sum_head_width3 = 0
+    sum_nose_eye_ear_angle3 = 0
+    sum_right_shoulder_to_right_elbow3 = 0
+    sum_right_elbow_to_right_wrist3 = 0
+    sum_left_shoulder_to_left_elbow3 = 0
+    sum_left_elbow_to_left_wrist3 = 0
+    sum_user_max_mpu3 = 0
+
+    while timesChecked < 10:
+        results = pose.process(image_rgb)
+        landmarks = results.pose_landmarks.landmark
+
+        # Accumulate the sums
+        sum_distance_shoulder3 += get_distance_right_shoulder_to_left_shoulder()
+        sum_distance_hip_shoulder3 += get_distance_right_hip_to_right_shoulder()
+        sum_left_distance_hip_shoulder3 += get_distance_left_hip_to_left_shoulder()
+        sum_height_diff_right_shoulder_to_right_hip3 += get_height_diff_right_shoulder_to_right_hip()
+        sum_head_width3 += get_head_width()
+        sum_nose_eye_ear_angle3 += calculate_nose_eyeInR_earR()
+        sum_right_shoulder_to_right_elbow3 += get_distance_right_shoulder_to_right_elbow()
+        sum_right_elbow_to_right_wrist3 += get_distance_right_elbow_to_right_wrist()
+        sum_left_shoulder_to_left_elbow3 += get_distance_left_shoulder_to_left_elbow()
+        sum_left_elbow_to_left_wrist3 += get_distance_left_elbow_to_left_wrist()
+        sum_user_max_mpu3 += get_distance_fingertip_to_fingertip()
+        
+        timesChecked += 1
+
+    # Calculate averages
+    init_distance_shoulder3 = sum_distance_shoulder3 / timesChecked
+    init_distance_hip_shoulder3 = sum_distance_hip_shoulder3 / timesChecked
+    init_left_distance_hip_shoulder3 = sum_left_distance_hip_shoulder3 / timesChecked
+    init_height_diff_right_shoulder_to_right_hip3 = sum_height_diff_right_shoulder_to_right_hip3 / timesChecked
+    init_head_width3 = sum_head_width3 / timesChecked
+    init_nose_eye_ear_angle3 = sum_nose_eye_ear_angle3 / timesChecked
+    init_right_shoulder_to_right_elbow3 = sum_right_shoulder_to_right_elbow3 / timesChecked
+    init_right_elbow_to_right_wrist3 = sum_right_elbow_to_right_wrist3 / timesChecked
+    init_left_shoulder_to_left_elbow3 = sum_left_shoulder_to_left_elbow3 / timesChecked
+    init_left_elbow_to_left_wrist3 = sum_left_elbow_to_left_wrist3 / timesChecked
+    init_user_max_mpu3 = sum_user_max_mpu3 / timesChecked
+    m_to_mpu_ratio3 = user_height / init_user_max_mpu3  # cm per mpu
+
+
+
+
     
-def depth_ratio():
-    global init_distance_shoulder_ratio, init_distance_hip_shoulder_ratio, init_left_distance_hip_shoulder_ratio, init_height_diff_right_shoulder_to_right_hip_ratio, init_head_width_ratio, init_nose_eye_ear_angle_ratio, init_right_shoulder_to_right_elbow_ratio, init_right_elbow_to_right_wrist_ratio, init_left_shoulder_to_left_elbow_ratio, init_left_elbow_to_left_wrist_ratio, init_user_max_mpu_ratio, init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2
+def find_depth_ratio():
+    global init_distance_shoulder_ratio, init_distance_hip_shoulder_ratio, init_left_distance_hip_shoulder_ratio, init_height_diff_right_shoulder_to_right_hip_ratio, init_head_width_ratio, init_nose_eye_ear_angle_ratio, init_right_shoulder_to_right_elbow_ratio, init_right_elbow_to_right_wrist_ratio, init_left_shoulder_to_left_elbow_ratio, init_left_elbow_to_left_wrist_ratio, init_user_max_mpu_ratio, init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, init_distance_shoulder2, init_distance_hip_shoulder2, init_left_distance_hip_shoulder2, init_height_diff_right_shoulder_to_right_hip2, init_head_width2, init_nose_eye_ear_angle2, init_right_shoulder_to_right_elbow2, init_right_elbow_to_right_wrist2, init_left_shoulder_to_left_elbow2, init_left_elbow_to_left_wrist2, init_user_max_mpu2, init_distance_shoulder3, init_distance_hip_shoulder3, init_left_distance_hip_shoulder3, init_height_diff_right_shoulder_to_right_hip3, init_head_width3, init_nose_eye_ear_angle3, init_right_shoulder_to_right_elbow3, init_right_elbow_to_right_wrist3, init_left_shoulder_to_left_elbow3, init_left_elbow_to_left_wrist3, init_user_max_mpu3, depth_ratio
 
-    init_distance_shoulder_ratio = init_distance_shoulder + init_distance_shoulder2
-    init_distance_hip_shoulder_ratio = init_distance_hip_shoulder + init_distance_hip_shoulder2
-    init_left_distance_hip_shoulder_ratio = init_left_distance_hip_shoulder + init_left_distance_hip_shoulder2
-    init_height_diff_right_shoulder_to_right_hip_ratio = init_height_diff_right_shoulder_to_right_hip + init_height_diff_right_shoulder_to_right_hip2
-    init_head_width_ratio = init_head_width + init_head_width2
-    init_nose_eye_ear_angle_ratio = init_nose_eye_ear_angle + init_nose_eye_ear_angle2
-    init_right_shoulder_to_right_elbow_ratio = init_right_shoulder_to_right_elbow + init_right_shoulder_to_right_elbow2
-    init_right_elbow_to_right_wrist_ratio = init_right_elbow_to_right_wrist + init_right_elbow_to_right_wrist2
-    init_left_shoulder_to_left_elbow_ratio = init_left_shoulder_to_left_elbow + init_left_shoulder_to_left_elbow2
-    init_left_elbow_to_left_wrist_ratio = init_left_elbow_to_left_wrist + init_left_elbow_to_left_wrist2
-    init_user_max_mpu_ratio = init_user_max_mpu + init_user_max_mpu2
-    
+
+    """
+    Method 1 asks the user to step forward 1 foot(rougly 30 centimeters)
+
+    Method 2 asks the user to move arms forward to a guard position where 
+      the shoulder and elbow points over lap with the wrists pointing up 
+      towards where the shoulders are angled at 90 degrees and the elbows 
+      are angled at 90 degrees.
+       \/ \/ \/  Example  \/ \/ \/
+
+       Front View          Side View
+        *   *                   *
+        | O |               O   |
+        * _ *               _ __*
+        |   |               |
+        | _ |               |
+        *   *               *
+        |   |               |
+        |   |               |
+        *   *               *
+    """
+
+    UseMethod = 2
+
+    if (UseMethod == 1):
+        init_distance_shoulder_ratio = (init_distance_shoulder + init_distance_shoulder2) / 30
+        init_distance_hip_shoulder_ratio = (init_distance_hip_shoulder + init_distance_hip_shoulder2) / 30
+        init_left_distance_hip_shoulder_ratio = (init_left_distance_hip_shoulder + init_left_distance_hip_shoulder2) / 30
+        init_height_diff_right_shoulder_to_right_hip_ratio = (init_height_diff_right_shoulder_to_right_hip + init_height_diff_right_shoulder_to_right_hip2) / 30
+        init_head_width_ratio = (init_head_width + init_head_width2) / 30
+        init_nose_eye_ear_angle_ratio = (init_nose_eye_ear_angle + init_nose_eye_ear_angle2) / 30
+        init_right_shoulder_to_right_elbow_ratio = (init_right_shoulder_to_right_elbow + init_right_shoulder_to_right_elbow2) / 30
+        init_right_elbow_to_right_wrist_ratio = (init_right_elbow_to_right_wrist + init_right_elbow_to_right_wrist2) / 30
+        init_left_shoulder_to_left_elbow_ratio = (init_left_shoulder_to_left_elbow + init_left_shoulder_to_left_elbow2) / 30
+        init_left_elbow_to_left_wrist_ratio = (init_left_elbow_to_left_wrist + init_left_elbow_to_left_wrist2) / 30
+        init_user_max_mpu_ratio = (init_user_max_mpu + init_user_max_mpu2)   / 30
+    else:
+        depth_ratio = ((init_right_elbow_to_right_wrist + init_left_elbow_to_left_wrist)/(init_right_elbow_to_right_wrist2 + init_left_elbow_to_left_wrist2))
+        print("depth ratio: " + str(depth_ratio))
 
 
 def data_update(image):
@@ -913,7 +1084,7 @@ def update_labels():
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time, do_once, wait_for_update, once, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn
+    global last_update_time, do_once, wait_for_update, once, once2, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn
 
     do_once = False
     # Start the timer when update_image is first called
@@ -944,25 +1115,34 @@ def update_image():
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-            if wait_for_update > 100:
+            if wait_for_update > 50:
                 if once:
                     init_data_update(image)
+                    print("init 1")
+
                     if developer_mode:
                         print("---------------------------------------------------------------Init Ran------------------------------------------------------------")
                     once = False
                 current_time = time.time()
                 
-                if current_time - last_update_time >= 2.5:  # Check if 0.5 second has passed
+                if current_time - last_update_time >= 2.5:  # Check if 2.5 second has passed
                     if elapsed_time <= 5:
-                        init2_data_update(image)
-                        depth_ratio()                   
+                        if once2:
+                            init2_data_update(image)
+                            print("init 2")
+                            find_depth_ratio()
+                            print("found depth")
+                            once2 = False
+
                     elif  elapsed_time <= 10:
-                        instruct_label.config(text=f"Please Step 1 Foot Back To Starting Position\nSimulation Starting in {(round(twoStepCountDown - elapsed_time, 1))}")
+                        instruct_label.config(text=f"Please leave arms at rest by your sides\nSimulation Starting in {(round(twoStepCountDown - elapsed_time, 1))}")
                     else:
+                        init3_data_update(image)
+                        print("init 3")
                         instruct_label.config(text=f"Simulation Started")
                         twoStepDone = True
 
-
+                if twoStepDone:
                     if developer_mode:
                         print("---------------------------------------------------------------Update Ran------------------------------------------------------------")
                     data_update(image) #Updating data to new vals   
