@@ -20,7 +20,7 @@ direction_facing = "Unknown"
 last_update_time = 0  # Variable to track the time of the last update
 max_shoulder_size = 0
 tickCheck = 0
-user_height = 0 #cm
+user_height = 170 #cm
 user_depth = 150 #cm
 wait_for_update = 0
 once = True
@@ -46,8 +46,22 @@ twoStepDone = False
 twoStepCountDown = 10
 isGraphOn = False
 depth_ratio = 0
+time_simulation_active = 60 
 
+developer_mode = True
+isGraphOn = True
 
+"""
+Enable Start Up Bypass
+
+\/ \/ \/ \/ \/ \/ \/ \/
+"""
+BypassStartUp = False
+"""
+/\ /\ /\ /\ /\ /\ /\ /\ 
+
+Enable Start Up Bypass
+"""
 
 
 
@@ -1182,6 +1196,7 @@ def update_image():
 Start up sequence
 \/ \/ \/
 """
+
 # Main window setup
 main_window = tk.Tk()
 main_window.title("Muscle Force Calculator")
@@ -1286,6 +1301,7 @@ title_label.pack(padx=20, pady=20)
 start_button = ttk.Button(start_frame, text="Start", command=show_data_input)
 start_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
+
 # Data input frame setup
 data_input_frame = ttk.Frame(main_window)
 
@@ -1324,8 +1340,14 @@ graph_on_check.pack(padx=10, pady=5)
 submit_button = ttk.Button(right_column, text="Next", command=on_submit)
 submit_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
+if BypassStartUp is True:
+    main_window.destroy()
+
+
 # Start the Tkinter main loop
 main_window.mainloop()
+
+
 
 
 """
