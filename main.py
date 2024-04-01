@@ -53,13 +53,11 @@ isGraphOn = True
 
 """
 Enable Start Up Bypass
-
 \/ \/ \/ \/ \/ \/ \/ \/
 """
-BypassStartUp = False
+BypassStartUp = True
 """
 /\ /\ /\ /\ /\ /\ /\ /\ 
-
 Enable Start Up Bypass
 """
 
@@ -1155,6 +1153,7 @@ def update_image():
                         print("init 3")
                         instruct_label.config(text=f"Simulation Started")
                         twoStepDone = True
+                        packTwoSteps()
 
                 if twoStepDone:
                     if developer_mode:
@@ -1375,22 +1374,56 @@ root.title("Pose Detection with Data Output")
 main_frame = ttk.Frame(root)
 main_frame.pack(padx=10, pady=10, fill='both', expand=True)
 
-instruct_label = ttk.Label(main_frame, text="Please Step 1 Foot Forward")
-instruct_label.pack(side=tk.BOTTOM, fill='both', expand=True, padx=10, pady=10)
+instruct_label = ttk.Label(main_frame, text="Please Step 1 Foot Forward", font=("Helvetica", 16))
+instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+
+video_frame = ttk.LabelFrame(main_frame, text="Video Output")
+video_frame.pack(side=tk.LEFT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
+video_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
+video_frame.config(width=600, height=600)  # Set the width and height of the frame
+
+instruct_label = ttk.Label(video_frame, text="Please Step 1 Foot Forward", font=("Helvetica", 16))
+instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
 
 # Create a label in the main frame for video feed
-video_label = ttk.Label(main_frame)
+video_label = ttk.Label(video_frame)
 video_label.pack(side=tk.LEFT, fill='both', expand=True, padx=10, pady=10)
+
+
+instruction_frame = ttk.LabelFrame(main_frame, text="Instruction Frame")
+instruction_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
+instruction_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
+instruction_frame.config(width=400, height=600)  # Set the width and height of the frame
+
+
+
+def packTwoSteps():
+    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&SHOULD DESTROY&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&-")
+    instruction_frame.destroy()
+    data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
+    data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
+    data_frame.config(width=400, height=600)  # Set the width and height of the frame
+    graph_frame.pack(side=tk.BOTTOM, fill='both', expand=False, padx=10, pady=10)
+    graph_frame.config(width=400, height=300)  # Set the width and height of the frame
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    direction_facing_label.pack(anchor=tk.W)
+    rot_mtx_label.pack(anchor=tk.W)
+    body_pitch_label.pack(anchor=tk.W)
+    body_roll_label.pack(anchor=tk.W)
+    body_yaw_label.pack(anchor=tk.W)
+    bicep_force_label.pack(anchor=tk.W)
+    test_num_label.pack(anchor=tk.W)
+    user_height_frame.pack(fill='x', expand=True, pady=5)
+
+
+
+
 
 # Create a frame for data output
 data_frame = ttk.LabelFrame(main_frame, text="Data Output")
-data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
-data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
-data_frame.config(width=400, height=600)  # Set the width and height of the frame
+
 
 graph_frame = ttk.Frame(data_frame)
-graph_frame.pack(side=tk.BOTTOM, fill='both', expand=False, padx=10, pady=10)
-graph_frame.config(width=400, height=300)  # Set the width and height of the frame
 
 
 
@@ -1398,7 +1431,7 @@ graph_frame.config(width=400, height=300)  # Set the width and height of the fra
 # Create a matplotlib figure and a canvas
 fig = plt.Figure(figsize=(5, 4), dpi=100)
 canvas = FigureCanvasTkAgg(fig, master=graph_frame)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
 # Initialize the plot data
 I_values = np.arange(0, 180)  # Elbow Angle values from -90 to 90
 current_index = 0  # Start with the first point
@@ -1441,35 +1474,38 @@ def plot_graph():
 
 
 
-
 # Labels for displaying data
 if developer_mode:
 
+
+
+
+
     direction_facing_label = ttk.Label(data_frame, text="Direction Facing: N/A")
-    direction_facing_label.pack(anchor=tk.W)
 
     rot_mtx_label = ttk.Label(data_frame, text="Rotation Matrix: (x,y,z)")
-    rot_mtx_label.pack(anchor=tk.W)
 
     body_pitch_label = ttk.Label(data_frame, text="Torso Pitch: N/A")
-    body_pitch_label.pack(anchor=tk.W)
 
     body_roll_label = ttk.Label(data_frame, text="Body Rotation (Z-Axis): N/A")
-    body_roll_label.pack(anchor=tk.W)
 
     body_yaw_label = ttk.Label(data_frame, text="Body Yaw: N/A")
-    body_yaw_label.pack(anchor=tk.W)
+
+    
+
+
+
+
 
 bicep_force_label = ttk.Label(data_frame, text="Force: N/A")
-bicep_force_label.pack(anchor=tk.W)
 
 test_num_label = ttk.Label(data_frame, text="Test Num: N/A")
-test_num_label.pack(anchor=tk.W)
 
 
 # Add User Height Input UI Elements
 user_height_frame = ttk.Frame(main_frame)
-user_height_frame.pack(fill='x', expand=True, pady=5)
+
+
 
 
 """
