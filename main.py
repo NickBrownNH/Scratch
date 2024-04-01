@@ -63,7 +63,10 @@ Enable Start Up Bypass
 """
 
 # Assuming you have an image file named "instruction_image.png" in the same directory as your script
-instruction_image_path = "pose1.png"  # You can change this to the path of your desired image
+instruction_image_1_path = "pose1.png"  # You can change this to the path of your desired image
+instruction_image_2_path = "pose1.png"  # You can change this to the path of your desired image
+instruction_image_3_path = "pose1.png"  # You can change this to the path of your desired image
+
 
 
 
@@ -1103,6 +1106,15 @@ def update_image():
     ret, frame = cap.read()
     global last_update_time, do_once, wait_for_update, once, once2, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn
 
+
+
+
+
+
+
+
+
+
     do_once = False
     # Start the timer when update_image is first called
     if start_time == 0:
@@ -1126,6 +1138,13 @@ def update_image():
 
     if root.winfo_exists():
         if ret:
+
+
+
+
+
+
+
             # Process the image and detect the pose
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = pose.process(image)
@@ -1169,9 +1188,122 @@ def update_image():
 
             wait_for_update += wait_for_update + 1
 
+
+
+
+
+
+
+            
+            # Overlay setup
+            overlay = frame.copy()
+
+            frame_conversion_value = frame.shape[:1] #take this value and multiply it by the media pipe units to find the values 
+
+
+
+
+            # Horizontal and vertical line positions
+            horizontal_line_position_1 = 100
+            vertical_line_position_1 = 100
+
+            horizontal_line_position_2 = 100
+            vertical_line_position_2 = 200
+
+            horizontal_line_position_3 = 100
+            vertical_line_position_3 = 300
+
+            horizontal_line_position_4 = 100
+            vertical_line_position_4 = 400
+
+            radius = 20
+
+
+            if results.pose_landmarks:
+                # Get landmarks for shoulders
+                left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+                # Calculate the average y-coordinate of the shoulders in pixel space
+                frame_height = frame.shape[0]
+                left_shoulder_y = int(left_shoulder.y * frame_height)
+                right_shoulder_y = int(right_shoulder.y * frame_height)
+                avg_shoulder_y = (left_shoulder_y + right_shoulder_y) // 2
+                left_shoulder_x = int(left_shoulder.x * frame_height)
+                right_shoulder_x = int(right_shoulder.x * frame_height)
+
+                # Update horizontal line positions based on shoulder height
+                horizontal_line_position_1 = avg_shoulder_y
+                horizontal_line_position_2 = horizontal_line_position_1
+                horizontal_line_position_3 = horizontal_line_position_1
+                horizontal_line_position_4 = horizontal_line_position_1
+                vertical_line_position_1 = right_shoulder_x - (left_shoulder_x-right_shoulder_x)
+                vertical_line_position_2 = right_shoulder_x
+                vertical_line_position_3 = left_shoulder_x
+                vertical_line_position_4 = left_shoulder_x + (left_shoulder_x-right_shoulder_x)
+
+            # Draw horizontal line at shoulder height
+            cv2.line(overlay, (0, horizontal_line_position_1), (frame.shape[1], horizontal_line_position_1), (0, 255, 0), 2)
+            # Draw vertical line
+            cv2.line(overlay, (vertical_line_position_1, 0), (vertical_line_position_1, 1000), (0, 255, 0), 2)
+            # Draw circles at intersections
+            cv2.circle(overlay, (vertical_line_position_1, horizontal_line_position_1), radius, (0, 0, 255), -1)
+
+
+
+            # Draw horizontal line
+            cv2.line(overlay, (0, horizontal_line_position_2), (1000, horizontal_line_position_2), (0, 255, 0), 2)
+
+            # Draw vertical line
+            cv2.line(overlay, (vertical_line_position_2, 0), (vertical_line_position_2, 1000), (0, 255, 0), 2)
+
+            # Draw circles at intersections
+            cv2.circle(overlay, (vertical_line_position_2, horizontal_line_position_2), radius, (0, 0, 255), -1)
+
+
+            
+
+            # Draw horizontal line
+            cv2.line(overlay, (0, horizontal_line_position_3), (1000, horizontal_line_position_3), (0, 255, 0), 2)
+
+            # Draw vertical line
+            cv2.line(overlay, (vertical_line_position_3, 0), (vertical_line_position_3, 1000), (0, 255, 0), 2)
+
+            # Draw circles at intersections
+            cv2.circle(overlay, (vertical_line_position_3, horizontal_line_position_3), radius, (0, 0, 255), -1)
+
+
+
+            # Draw horizontal line
+            cv2.line(overlay, (0, horizontal_line_position_4), (1000, horizontal_line_position_4), (0, 255, 0), 2)
+
+            # Draw vertical line
+            cv2.line(overlay, (vertical_line_position_4, 0), (vertical_line_position_4, 1000), (0, 255, 0), 2)
+
+            # Draw circles at intersections
+            cv2.circle(overlay, (vertical_line_position_4, horizontal_line_position_4), radius, (0, 0, 255), -1)
+
+
+
+            # Apply the overlay
+            alpha = 0.6  # Transparency factor
+            image = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
+
+
+
+
+
+
+
+
+
+
+
             # Draw the pose annotations
             if results.pose_landmarks:
                 mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+
 
             # Convert the image to ImageTk format
             image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
@@ -1407,7 +1539,7 @@ img_instruct_label = ttk.Label(instruction_frame, text="Please Spread Your Arms 
 img_instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
 
 # Load the image
-instruction_image_1 = Image.open(instruction_image_path)
+instruction_image_1 = Image.open(instruction_image_1_path)
 
 # Resize the image if necessary
 instruction_image_1 = instruction_image_1.resize((400, 400), Image.Resampling.LANCZOS)
@@ -1415,13 +1547,43 @@ instruction_image_1 = instruction_image_1.resize((400, 400), Image.Resampling.LA
 # Convert the image to a format suitable for Tkinter
 instruction_image_1_tk = ImageTk.PhotoImage(instruction_image_1)
 
+# Load the image
+instruction_image_2 = Image.open(instruction_image_2_path)
+
+# Resize the image if necessary
+instruction_image_2 = instruction_image_2.resize((400, 400), Image.Resampling.LANCZOS)
+
+# Convert the image to a format suitable for Tkinter
+instruction_image_2_tk = ImageTk.PhotoImage(instruction_image_2)
+
+# Load the image
+instruction_image_3 = Image.open(instruction_image_3_path)
+
+# Resize the image if necessary
+instruction_image_3 = instruction_image_3.resize((400, 400), Image.Resampling.LANCZOS)
+
+# Convert the image to a format suitable for Tkinter
+instruction_image_3_tk = ImageTk.PhotoImage(instruction_image_3)
+
 
 # Create a label in the instruction_frame to display the image
 instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_1_tk)
 instruction_image_label.image = instruction_image_1_tk  # Keep a reference, prevent GC
 instruction_image_label.pack(side=tk.TOP, pady=10)
 
+"""
+# Create a label in the instruction_frame to display the image
+instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_2_tk)
+instruction_image_label.image = instruction_image_2_tk  # Keep a reference, prevent GC
+instruction_image_label.pack(side=tk.TOP, pady=10)
+"""
 
+"""
+# Create a label in the instruction_frame to display the image
+instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_2_tk)
+instruction_image_label.image = instruction_image_2_tk  # Keep a reference, prevent GC
+instruction_image_label.pack(side=tk.TOP, pady=10)
+"""
 
 
 
