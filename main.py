@@ -25,6 +25,7 @@ user_depth = 150 #cm
 wait_for_update = 0
 once = True
 once2 = True
+once3 = True
 left_shoulder_z = 0
 left_elbow_z = 0
 user_weight = 58.967 #kg
@@ -66,6 +67,17 @@ Enable Start Up Bypass
 instruction_image_1_path = "pose1.png"  # You can change this to the path of your desired image
 instruction_image_2_path = "pose1.png"  # You can change this to the path of your desired image
 instruction_image_3_path = "pose1.png"  # You can change this to the path of your desired image
+
+horizontal_line_position_1 = 0
+horizontal_line_position_2 = 0
+horizontal_line_position_3 = 0
+horizontal_line_position_4 = 0
+vertical_line_position_1 = 0
+vertical_line_position_2 = 0
+vertical_line_position_3 = 0
+vertical_line_position_4 = 0
+
+
 
 
 
@@ -1104,7 +1116,7 @@ def update_labels():
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
-    global last_update_time, do_once, wait_for_update, once, once2, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn
+    global last_update_time, do_once, wait_for_update, once, once2, once3, leftArmAngle, left_arm_bicep_force, start_time, twoStepDone, isGraphOn, horizontal_line_position_1, horizontal_line_position_2, horizontal_line_position_3, horizontal_line_position_4, vertical_line_position_1, vertical_line_position_2, vertical_line_position_3, vertical_line_position_4
 
 
 
@@ -1201,46 +1213,34 @@ def update_image():
             frame_conversion_value = frame.shape[:1] #take this value and multiply it by the media pipe units to find the values 
 
 
-
-
-            # Horizontal and vertical line positions
-            horizontal_line_position_1 = 100
-            vertical_line_position_1 = 100
-
-            horizontal_line_position_2 = 100
-            vertical_line_position_2 = 200
-
-            horizontal_line_position_3 = 100
-            vertical_line_position_3 = 300
-
-            horizontal_line_position_4 = 100
-            vertical_line_position_4 = 400
-
-            radius = 20
+            radius = 15
 
 
             if results.pose_landmarks:
-                # Get landmarks for shoulders
-                left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
-                right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+                if once3:
+                    # Get landmarks for shoulders
+                    left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                    right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
 
-                # Calculate the average y-coordinate of the shoulders in pixel space
-                frame_height = frame.shape[0]
-                left_shoulder_y = int(left_shoulder.y * frame_height)
-                right_shoulder_y = int(right_shoulder.y * frame_height)
-                avg_shoulder_y = (left_shoulder_y + right_shoulder_y) // 2
-                left_shoulder_x = int(left_shoulder.x * frame_height)
-                right_shoulder_x = int(right_shoulder.x * frame_height)
+                    # Calculate the average y-coordinate of the shoulders in pixel space
+                    frame_height = frame.shape[0]
+                    frame_width = frame.shape[1]
+                    left_shoulder_y = int(left_shoulder.y * frame_height)
+                    right_shoulder_y = int(right_shoulder.y * frame_height)
+                    avg_shoulder_y = (left_shoulder_y + right_shoulder_y) // 2
+                    left_shoulder_x = int(left_shoulder.x * frame_width)
+                    right_shoulder_x = int(right_shoulder.x * frame_width)
 
-                # Update horizontal line positions based on shoulder height
-                horizontal_line_position_1 = avg_shoulder_y
-                horizontal_line_position_2 = horizontal_line_position_1
-                horizontal_line_position_3 = horizontal_line_position_1
-                horizontal_line_position_4 = horizontal_line_position_1
-                vertical_line_position_1 = right_shoulder_x - (left_shoulder_x-right_shoulder_x)
-                vertical_line_position_2 = right_shoulder_x
-                vertical_line_position_3 = left_shoulder_x
-                vertical_line_position_4 = left_shoulder_x + (left_shoulder_x-right_shoulder_x)
+                    # Update horizontal line positions based on shoulder height
+                    horizontal_line_position_1 = avg_shoulder_y
+                    horizontal_line_position_2 = horizontal_line_position_1
+                    horizontal_line_position_3 = horizontal_line_position_1
+                    horizontal_line_position_4 = horizontal_line_position_1
+                    vertical_line_position_1 = right_shoulder_x - (left_shoulder_x-right_shoulder_x)
+                    vertical_line_position_2 = right_shoulder_x
+                    vertical_line_position_3 = left_shoulder_x
+                    vertical_line_position_4 = left_shoulder_x + (left_shoulder_x-right_shoulder_x)
+                    once3 = False
 
             # Draw horizontal line at shoulder height
             cv2.line(overlay, (0, horizontal_line_position_1), (frame.shape[1], horizontal_line_position_1), (0, 255, 0), 2)
@@ -1253,10 +1253,8 @@ def update_image():
 
             # Draw horizontal line
             cv2.line(overlay, (0, horizontal_line_position_2), (1000, horizontal_line_position_2), (0, 255, 0), 2)
-
             # Draw vertical line
             cv2.line(overlay, (vertical_line_position_2, 0), (vertical_line_position_2, 1000), (0, 255, 0), 2)
-
             # Draw circles at intersections
             cv2.circle(overlay, (vertical_line_position_2, horizontal_line_position_2), radius, (0, 0, 255), -1)
 
@@ -1265,10 +1263,8 @@ def update_image():
 
             # Draw horizontal line
             cv2.line(overlay, (0, horizontal_line_position_3), (1000, horizontal_line_position_3), (0, 255, 0), 2)
-
             # Draw vertical line
             cv2.line(overlay, (vertical_line_position_3, 0), (vertical_line_position_3, 1000), (0, 255, 0), 2)
-
             # Draw circles at intersections
             cv2.circle(overlay, (vertical_line_position_3, horizontal_line_position_3), radius, (0, 0, 255), -1)
 
@@ -1276,13 +1272,10 @@ def update_image():
 
             # Draw horizontal line
             cv2.line(overlay, (0, horizontal_line_position_4), (1000, horizontal_line_position_4), (0, 255, 0), 2)
-
             # Draw vertical line
             cv2.line(overlay, (vertical_line_position_4, 0), (vertical_line_position_4, 1000), (0, 255, 0), 2)
-
             # Draw circles at intersections
             cv2.circle(overlay, (vertical_line_position_4, horizontal_line_position_4), radius, (0, 0, 255), -1)
-
 
 
             # Apply the overlay
