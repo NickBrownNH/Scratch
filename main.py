@@ -51,6 +51,7 @@ time_simulation_active = 60
 developer_mode = True
 isGraphOn = True
 
+
 """
 Enable Start Up Bypass
 \/ \/ \/ \/ \/ \/ \/ \/
@@ -60,6 +61,10 @@ BypassStartUp = True
 /\ /\ /\ /\ /\ /\ /\ /\ 
 Enable Start Up Bypass
 """
+
+# Assuming you have an image file named "instruction_image.png" in the same directory as your script
+instruction_image_path = "pose1.png"  # You can change this to the path of your desired image
+
 
 
 
@@ -1382,8 +1387,8 @@ video_frame.pack(side=tk.LEFT, fill='both', expand=False, padx=20, pady=10)  # A
 video_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
 video_frame.config(width=600, height=600)  # Set the width and height of the frame
 
-instruct_label = ttk.Label(video_frame, text="Please Step 1 Foot Forward", font=("Helvetica", 16))
-instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+vid_instruct_label = ttk.Label(video_frame, text="Please Align Your Body to Fit In The Circles", font=("Helvetica", 16))
+vid_instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
 
 # Create a label in the main frame for video feed
 video_label = ttk.Label(video_frame)
@@ -1397,8 +1402,34 @@ instruction_frame.config(width=400, height=600)  # Set the width and height of t
 
 
 
+
+img_instruct_label = ttk.Label(instruction_frame, text="Please Spread Your Arms Out Like This:", font=("Helvetica", 16))
+img_instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+
+# Load the image
+instruction_image_1 = Image.open(instruction_image_path)
+
+# Resize the image if necessary
+instruction_image_1 = instruction_image_1.resize((400, 400), Image.Resampling.LANCZOS)
+
+# Convert the image to a format suitable for Tkinter
+instruction_image_1_tk = ImageTk.PhotoImage(instruction_image_1)
+
+
+# Create a label in the instruction_frame to display the image
+instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_1_tk)
+instruction_image_label.image = instruction_image_1_tk  # Keep a reference, prevent GC
+instruction_image_label.pack(side=tk.TOP, pady=10)
+
+
+
+
+
+
+
 def packTwoSteps():
-    print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&SHOULD DESTROY&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&-")
+    if developer_mode:
+        print("&&&&   PHASE CHANGE : INIT -> RUNNING   &&&&")
     instruction_frame.destroy()
     data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
     data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
