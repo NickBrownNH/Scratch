@@ -1240,6 +1240,66 @@ def draw_guide_overlay_2(frame, results):
         right_shoulder_x = right_shoulder.x * frame_width
         right_shoulder_y = right_shoulder.y * frame_height
         left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.2
+        left_elbow_y = left_shoulder_y
+        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.2
+        right_elbow_y = left_shoulder_y
+        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.2
+        left_wrist_y = left_shoulder_y + (right_shoulder_x-left_shoulder_x)*0.8
+        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.2
+        right_wrist_y = left_shoulder_y + (right_shoulder_x-left_shoulder_x)*0.8
+
+
+
+
+        # Calculate positions for circles
+        left_shoulder_pos = np.array([left_shoulder_x, left_shoulder_y])
+        right_shoulder_pos = np.array([right_shoulder_x, right_shoulder_y])
+        
+        avg_shoulder_y = int((left_shoulder_pos[1] + right_shoulder_pos[1]) / 2)
+
+        left_elbow_pos = np.array([left_elbow_x, left_elbow_y])
+        right_elbow_pos = np.array([right_elbow_x, right_elbow_y])
+
+        left_wrist_pos = np.array([left_wrist_x, left_wrist_y])
+        right_wrist_pos = np.array([right_wrist_x, right_wrist_y])
+
+        # Initialize the circle positions
+        initial_circle_positions = {
+            'left_shoulder': (int(left_shoulder_pos[0]), avg_shoulder_y),
+            'right_shoulder': (int(right_shoulder_pos[0]), avg_shoulder_y),
+            'left_elbow': (int(left_elbow_pos[0]), int(left_elbow_pos[1])),
+            'right_elbow': (int(right_elbow_pos[0]),int(right_elbow_pos[1])),
+            'left_wrist': (int(left_wrist_pos[0]),int(left_wrist_pos[1])),
+            'right_wrist': (int(right_wrist_pos[0]),int(right_wrist_pos[1]))
+
+
+        }
+
+    # Draw the circles at the initialized positions
+    for pos in initial_circle_positions.values():
+        cv2.circle(overlay, pos, radius, (0, 255, 0), 2)
+
+    return overlay
+
+
+
+def draw_guide_overlay_3(frame, results):
+    global initial_circle_positions
+    radius = 15
+    overlay = frame.copy()
+    frame_height, frame_width, _ = frame.shape
+
+    if results.pose_landmarks and not initial_circle_positions:
+        # Get the necessary landmarks
+        landmarks = results.pose_landmarks.landmark
+        left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+        right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+        left_shoulder_x = left_shoulder.x * frame_width
+        left_shoulder_y = left_shoulder.y * frame_height
+        right_shoulder_x = right_shoulder.x * frame_width
+        right_shoulder_y = right_shoulder.y * frame_height
+        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.2
         left_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.8
         right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.15
         right_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.8
@@ -1282,63 +1342,6 @@ def draw_guide_overlay_2(frame, results):
     return overlay
 
 
-def draw_guide_overlay_3(frame, results):
-    global initial_circle_positions
-    radius = 15
-    overlay = frame.copy()
-    frame_height, frame_width, _ = frame.shape
-
-    if results.pose_landmarks and not initial_circle_positions:
-        # Get the necessary landmarks
-        landmarks = results.pose_landmarks.landmark
-        left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
-        right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-
-        left_shoulder_x = left_shoulder.x * frame_width
-        left_shoulder_y = left_shoulder.y * frame_height
-        right_shoulder_x = right_shoulder.x * frame_width
-        right_shoulder_y = right_shoulder.y * frame_height
-        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.7
-        left_elbow_y = left_shoulder_y
-        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.7
-        right_elbow_y = left_shoulder_y
-        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*1.3
-        left_wrist_y = left_shoulder_y
-        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*1.3
-        right_wrist_y = left_shoulder_y
-
-
-
-
-        # Calculate positions for circles
-        left_shoulder_pos = np.array([left_shoulder_x, left_shoulder_y])
-        right_shoulder_pos = np.array([right_shoulder_x, right_shoulder_y])
-        
-        avg_shoulder_y = int((left_shoulder_pos[1] + right_shoulder_pos[1]) / 2)
-
-        left_elbow_pos = np.array([left_elbow_x, left_elbow_y])
-        right_elbow_pos = np.array([right_elbow_x, right_elbow_y])
-
-        left_wrist_pos = np.array([left_wrist_x, left_wrist_y])
-        right_wrist_pos = np.array([right_wrist_x, right_wrist_y])
-
-        # Initialize the circle positions
-        initial_circle_positions = {
-            'left_shoulder': (int(left_shoulder_pos[0]), avg_shoulder_y),
-            'right_shoulder': (int(right_shoulder_pos[0]), avg_shoulder_y),
-            'left_elbow': (int(left_elbow_pos[0]), avg_shoulder_y),
-            'right_elbow': (int(right_elbow_pos[0]),avg_shoulder_y),
-            'left_wrist': (int(left_wrist_pos[0]),avg_shoulder_y),
-            'right_wrist': (int(right_wrist_pos[0]),avg_shoulder_y)
-
-
-        }
-
-    # Draw the circles at the initialized positions
-    for pos in initial_circle_positions.values():
-        cv2.circle(overlay, pos, radius, (0, 255, 0), 2)
-
-    return overlay
 
 
 
