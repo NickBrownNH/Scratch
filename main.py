@@ -72,10 +72,15 @@ horizontal_line_position_1 = 0
 horizontal_line_position_2 = 0
 horizontal_line_position_3 = 0
 horizontal_line_position_4 = 0
+horizontal_line_position_5 = 0
+horizontal_line_position_6 = 0
 vertical_line_position_1 = 0
 vertical_line_position_2 = 0
 vertical_line_position_3 = 0
 vertical_line_position_4 = 0
+vertical_line_position_5 = 0
+vertical_line_position_6 = 0
+
 
 
 
@@ -1113,6 +1118,101 @@ def update_labels():
         #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
 
 
+
+
+def draw_guide_overlay(overlay, frame, results):
+    global once3, horizontal_line_position_1, horizontal_line_position_2, horizontal_line_position_3, horizontal_line_position_4, horizontal_line_position_5, horizontal_line_position_6, vertical_line_position_1, vertical_line_position_2, vertical_line_position_3, vertical_line_position_4, vertical_line_position_5, vertical_line_position_6
+    radius = 15
+    frame_height = frame.shape[0]
+    frame_width = frame.shape[1]
+
+    if results.pose_landmarks:
+        if once3:
+            # Get landmarks for shoulders
+            left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+            right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+            # Calculate the average y-coordinate of the shoulders in pixel space
+            left_shoulder_y = int(left_shoulder.y * frame_height)
+            right_shoulder_y = int(right_shoulder.y * frame_height)
+            avg_shoulder_y = (left_shoulder_y + right_shoulder_y) // 2
+            left_shoulder_x = int(left_shoulder.x * frame_width)
+            right_shoulder_x = int(right_shoulder.x * frame_width)
+
+            # Update horizontal line positions based on shoulder height
+            horizontal_line_position_1 = avg_shoulder_y
+            horizontal_line_position_2 = horizontal_line_position_1
+            horizontal_line_position_3 = horizontal_line_position_1
+            horizontal_line_position_4 = horizontal_line_position_1
+            horizontal_line_position_5 = horizontal_line_position_1
+            horizontal_line_position_6 = horizontal_line_position_1
+
+
+            vertical_line_position_1 = right_shoulder_x - (left_shoulder_x - right_shoulder_x)
+            vertical_line_position_2 = right_shoulder_x
+            vertical_line_position_3 = left_shoulder_x
+            vertical_line_position_4 = left_shoulder_x + (left_shoulder_x - right_shoulder_x)
+            vertical_line_position_5 = right_shoulder_x + (left_shoulder_x - right_shoulder_x)*2
+            vertical_line_position_6 = left_shoulder_x + (left_shoulder_x - right_shoulder_x)*2
+            once3 = False
+
+
+        # Draw horizontal and vertical lines with circles at intersections
+        cv2.line(overlay, (0, horizontal_line_position_1), (frame_width, horizontal_line_position_1), (0, 255, 0), 2)
+        cv2.line(overlay, (vertical_line_position_1, 0), (vertical_line_position_1, frame_height), (0, 255, 0), 2)
+        cv2.circle(overlay, (vertical_line_position_1, horizontal_line_position_1), radius, (0, 0, 255), -1)
+        
+    
+
+        # Draw horizontal line
+        cv2.line(overlay, (0, horizontal_line_position_2), (1000, horizontal_line_position_2), (0, 255, 0), 2)
+        # Draw vertical line
+        cv2.line(overlay, (vertical_line_position_2, 0), (vertical_line_position_2, 1000), (0, 255, 0), 2)
+        # Draw circles at intersections
+        cv2.circle(overlay, (vertical_line_position_2, horizontal_line_position_2), radius, (0, 0, 255), -1)
+
+
+        
+
+        # Draw horizontal line
+        cv2.line(overlay, (0, horizontal_line_position_3), (1000, horizontal_line_position_3), (0, 255, 0), 2)
+        # Draw vertical line
+        cv2.line(overlay, (vertical_line_position_3, 0), (vertical_line_position_3, 1000), (0, 255, 0), 2)
+        # Draw circles at intersections
+        cv2.circle(overlay, (vertical_line_position_3, horizontal_line_position_3), radius, (0, 0, 255), -1)
+
+
+
+        # Draw horizontal line
+        cv2.line(overlay, (0, horizontal_line_position_4), (1000, horizontal_line_position_4), (0, 255, 0), 2)
+        # Draw vertical line
+        cv2.line(overlay, (vertical_line_position_4, 0), (vertical_line_position_4, 1000), (0, 255, 0), 2)
+        # Draw circles at intersections
+        cv2.circle(overlay, (vertical_line_position_4, horizontal_line_position_4), radius, (0, 0, 255), -1)
+
+    return overlay
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
@@ -1204,90 +1304,13 @@ def update_image():
 
 
 
-
-
-            
-            # Overlay setup
+            alpha = 0.6
             overlay = frame.copy()
-
-            frame_conversion_value = frame.shape[:1] #take this value and multiply it by the media pipe units to find the values 
-
-
-            radius = 15
-
-
-            if results.pose_landmarks:
-                if once3:
-                    # Get landmarks for shoulders
-                    left_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
-                    right_shoulder = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-
-                    # Calculate the average y-coordinate of the shoulders in pixel space
-                    frame_height = frame.shape[0]
-                    frame_width = frame.shape[1]
-                    left_shoulder_y = int(left_shoulder.y * frame_height)
-                    right_shoulder_y = int(right_shoulder.y * frame_height)
-                    avg_shoulder_y = (left_shoulder_y + right_shoulder_y) // 2
-                    left_shoulder_x = int(left_shoulder.x * frame_width)
-                    right_shoulder_x = int(right_shoulder.x * frame_width)
-
-                    # Update horizontal line positions based on shoulder height
-                    horizontal_line_position_1 = avg_shoulder_y
-                    horizontal_line_position_2 = horizontal_line_position_1
-                    horizontal_line_position_3 = horizontal_line_position_1
-                    horizontal_line_position_4 = horizontal_line_position_1
-                    vertical_line_position_1 = right_shoulder_x - (left_shoulder_x-right_shoulder_x)
-                    vertical_line_position_2 = right_shoulder_x
-                    vertical_line_position_3 = left_shoulder_x
-                    vertical_line_position_4 = left_shoulder_x + (left_shoulder_x-right_shoulder_x)
-                    once3 = False
-
-            # Draw horizontal line at shoulder height
-            cv2.line(overlay, (0, horizontal_line_position_1), (frame.shape[1], horizontal_line_position_1), (0, 255, 0), 2)
-            # Draw vertical line
-            cv2.line(overlay, (vertical_line_position_1, 0), (vertical_line_position_1, 1000), (0, 255, 0), 2)
-            # Draw circles at intersections
-            cv2.circle(overlay, (vertical_line_position_1, horizontal_line_position_1), radius, (0, 0, 255), -1)
-
-
-
-            # Draw horizontal line
-            cv2.line(overlay, (0, horizontal_line_position_2), (1000, horizontal_line_position_2), (0, 255, 0), 2)
-            # Draw vertical line
-            cv2.line(overlay, (vertical_line_position_2, 0), (vertical_line_position_2, 1000), (0, 255, 0), 2)
-            # Draw circles at intersections
-            cv2.circle(overlay, (vertical_line_position_2, horizontal_line_position_2), radius, (0, 0, 255), -1)
-
-
-            
-
-            # Draw horizontal line
-            cv2.line(overlay, (0, horizontal_line_position_3), (1000, horizontal_line_position_3), (0, 255, 0), 2)
-            # Draw vertical line
-            cv2.line(overlay, (vertical_line_position_3, 0), (vertical_line_position_3, 1000), (0, 255, 0), 2)
-            # Draw circles at intersections
-            cv2.circle(overlay, (vertical_line_position_3, horizontal_line_position_3), radius, (0, 0, 255), -1)
-
-
-
-            # Draw horizontal line
-            cv2.line(overlay, (0, horizontal_line_position_4), (1000, horizontal_line_position_4), (0, 255, 0), 2)
-            # Draw vertical line
-            cv2.line(overlay, (vertical_line_position_4, 0), (vertical_line_position_4, 1000), (0, 255, 0), 2)
-            # Draw circles at intersections
-            cv2.circle(overlay, (vertical_line_position_4, horizontal_line_position_4), radius, (0, 0, 255), -1)
-
-
-            # Apply the overlay
-            alpha = 0.6  # Transparency factor
+            overlay = draw_guide_overlay(overlay, frame, results)
             image = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
 
 
-
-
-
-
-
+            #Guide Marker Overlay---
 
 
 
