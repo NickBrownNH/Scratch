@@ -83,6 +83,7 @@ vertical_line_position_6 = 0
 
 # Global variables for the positions of the circles
 initial_circle_positions = {}
+current_stage = 'overlay_1'
 
 
 
@@ -1361,7 +1362,7 @@ def draw_guide_overlay_3(frame, results):
 
 
 
-
+"""
 # Function to update the pose image and data
 def update_image():
     ret, frame = cap.read()
@@ -1485,9 +1486,209 @@ def update_image():
                     
         root.after(10, update_image)  # Repeat after an interval
 
+"""
+"""
+def update_image():
+    global twoStepDone, current_stage, initial_circle_positions
 
+    # Capture a frame from the video source
+    ret, frame = cap.read()
 
+    # Exit the function if video capture has failed
+    if not ret:
+        return
 
+    # Process the image with MediaPipe Pose
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = pose.process(image)
+    image.flags.writeable = True
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    # Execute actions based on the current stage
+    if current_stage == 'overlay_1':
+        overlay = draw_guide_overlay_1(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init_data_update(image)
+            time.sleep(1)
+            current_stage = 'overlay_2'
+
+    elif current_stage == 'overlay_2':
+        overlay = draw_guide_overlay_2(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init2_data_update(image)
+            find_depth_ratio()
+            current_stage = 'overlay_3'
+
+    elif current_stage == 'overlay_3':
+        overlay = draw_guide_overlay_3(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init3_data_update(image)
+            twoStepDone = True
+            packTwoSteps()
+            current_stage = 'data_update'
+
+    elif current_stage == 'data_update' and twoStepDone:
+        data_update(image)
+        update_labels()
+
+    # Display the overlay on the frame
+    if 'overlay' in current_stage:
+        image = cv2.addWeighted(overlay, 0.6, frame, 1 - 0.6, 0)
+        # Draw the pose annotations on the frame
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+    # Convert the image to ImageTk format and display it
+    image_tk = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
+    video_label.config(image=image_tk)
+    video_label.image = image_tk  # Keep a reference to avoid garbage collection
+
+    # Schedule the next update
+    root.after(10, update_image)
+"""
+"""
+def update_image():
+    global last_update_time, twoStepDone, current_stage, in_position_counter
+
+    # Capture a frame from the video source
+    ret, frame = cap.read()
+
+    # Exit the function if video capture has failed
+    if not ret:
+        return
+
+    # Process the image with MediaPipe Pose
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = pose.process(image)
+    image.flags.writeable = True
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    # Execute actions based on the current stage
+    if current_stage == 'overlay_1':
+        overlay = draw_guide_overlay_1(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            if in_position_counter > 30:  # Assuming 30 frames ~ 1 second
+                init_data_update(image)
+                current_stage = 'overlay_2'
+                in_position_counter = 0
+                print("Transitioning to overlay_2")
+            else:
+                in_position_counter += 1
+        else:
+            in_position_counter = 0
+
+    elif current_stage == 'overlay_2':
+        print("in ol2")
+        overlay = draw_guide_overlay_2(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            if in_position_counter > 30:
+                init2_data_update(image)
+                find_depth_ratio()
+                current_stage = 'overlay_3'
+                in_position_counter = 0
+                print("Transitioning to overlay_3")
+            else:
+                in_position_counter += 1
+        else:
+            in_position_counter = 0
+
+    elif current_stage == 'overlay_3':
+        overlay = draw_guide_overlay_3(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            if in_position_counter > 30:
+                init3_data_update(image)
+                twoStepDone = True
+                packTwoSteps()
+                current_stage = 'data_update'
+                in_position_counter = 0
+                print("Transitioning to data_update")
+            else:
+                in_position_counter += 1
+        else:
+            in_position_counter = 0
+
+    elif current_stage == 'data_update' and twoStepDone:
+        data_update(image)
+        update_labels()
+        last_update_time = time.time()
+
+    # Display the overlay on the frame
+    if 'overlay_1' or 'overlay_2' or 'overlay_3' in current_stage:
+        image = cv2.addWeighted(overlay, 0.6, frame, 1 - 0.6, 0)
+        # Draw the pose annotations on the frame
+        if results.pose_landmarks:
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+    # Convert the image to ImageTk format and display it
+    image_tk = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
+    video_label.config(image=image_tk)
+    video_label.image = image_tk  # Keep a reference to avoid garbage collection
+
+    # Schedule the next update
+    root.after(10, update_image)
+
+"""
+
+def update_image():
+    global last_update_time, twoStepDone, current_stage, initial_circle_positions
+
+    ret, frame = cap.read()
+    if not ret:
+        return  # Exit if video capture has failed
+
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = pose.process(image)
+    image.flags.writeable = True
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+    if current_stage == 'overlay_1':
+        overlay = draw_guide_overlay_1(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init_data_update(image)
+            initial_circle_positions = {}  # Reset for the next overlay
+            current_stage = 'overlay_2'
+
+    elif current_stage == 'overlay_2':
+        overlay = draw_guide_overlay_2(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init2_data_update(image)
+            find_depth_ratio()
+            initial_circle_positions = {}  # Reset for the next overlay
+            current_stage = 'overlay_3'
+
+    elif current_stage == 'overlay_3':
+        overlay = draw_guide_overlay_3(frame, results)
+        points_in_position = check_points_in_circles(frame, results)
+        if all(points_in_position.values()):
+            init3_data_update(image)
+            twoStepDone = True
+            packTwoSteps()
+            current_stage = 'data_update'
+
+    elif current_stage == 'data_update' and twoStepDone:
+        overlay = None  # Clear overlay for the data update phase
+        data_update(image)
+        update_labels()
+
+    if overlay is not None:
+        image = cv2.addWeighted(overlay, 0.6, frame, 1 - 0.6, 0)
+
+    if results.pose_landmarks:
+        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+    image_tk = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
+    video_label.config(image=image_tk)
+    video_label.image = image_tk
+
+    root.after(10, update_image)
 
 
 
