@@ -866,10 +866,9 @@ def init_data_update(image):
     sum_user_max_mpu = 0
 
 
-    instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_2_tk)
-    instruction_image_label.image = instruction_image_2_tk  # Keep a reference, prevent GC
+    instruction_image_label.config(image=instruction_image_2_tk)  # Keep a reference, prevent GC
     instruction_image_label.pack(side=tk.TOP, pady=10)
-    img_instruct_label = ttk.Label(instruction_frame, text="Please Bring Your Arms Up Like This:", font=("Helvetica", 24))
+    img_instruct_label.config(text="Please Bring Your Arms Up Like This:")
     img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
     
 
@@ -934,6 +933,11 @@ def init2_data_update(image):
     sum_left_shoulder_to_left_elbow2 = 0
     sum_left_elbow_to_left_wrist2 = 0
     sum_user_max_mpu2 = 0
+
+    instruction_image_label.config(image = instruction_image_3_tk)  # Keep a reference, prevent GC
+    instruction_image_label.pack(side=tk.TOP, pady=10)
+    img_instruct_label.config(text="Please Bring Your Arms Down Like This:")
+    img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
 
     while timesChecked < 10:
         results = pose.process(image_rgb)
@@ -1716,11 +1720,7 @@ def update_image():
             find_depth_ratio()
             initial_circle_positions = {}  # Reset for the next overlay
             current_stage = 'overlay_3'
-            instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_3_tk)
-            instruction_image_label.image = instruction_image_3_tk  # Keep a reference, prevent GC
-            instruction_image_label.pack(side=tk.TOP, pady=10)
-            img_instruct_label = ttk.Label(instruction_frame, text="Please Bring Your Arms Down Like This:", font=("Helvetica", 24))
-            img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
+            
 
     elif current_stage == 'overlay_3':
         overlay = draw_guide_overlay_3(frame, results)
