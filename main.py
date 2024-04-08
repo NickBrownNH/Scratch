@@ -64,9 +64,9 @@ Enable Start Up Bypass
 """
 
 # Assuming you have an image file named "instruction_image.png" in the same directory as your script
-instruction_image_1_path = "pose1.png"  # You can change this to the path of your desired image
-instruction_image_2_path = "pose1.png"  # You can change this to the path of your desired image
-instruction_image_3_path = "pose1.png"  # You can change this to the path of your desired image
+instruction_image_1_path = "pose1.png"  # Wingspan
+instruction_image_2_path = "pose2.png"  # Blocking
+instruction_image_3_path = "pose3.png"  # Arms By Side
 
 horizontal_line_position_1 = 0
 horizontal_line_position_2 = 0
@@ -844,7 +844,7 @@ def init_data_update(image):
     """
     This method is called once before the program begins updating calculations so that initial values can be found for the user's specific body ratios
     """
-    global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, image_rgb, results, landmarks
+    global init_distance_shoulder, init_distance_hip_shoulder, init_left_distance_hip_shoulder, init_height_diff_right_shoulder_to_right_hip, init_head_width, init_nose_eye_ear_angle, init_right_shoulder_to_right_elbow, init_right_elbow_to_right_wrist, init_left_shoulder_to_left_elbow, init_left_elbow_to_left_wrist, init_user_max_mpu, m_to_mpu_ratio, image_rgb, results, landmarks, instruction_image_label, img_instruct_label, main_frame
     
     timesChecked = 0
     
@@ -864,6 +864,18 @@ def init_data_update(image):
     sum_left_shoulder_to_left_elbow = 0
     sum_left_elbow_to_left_wrist = 0
     sum_user_max_mpu = 0
+
+
+    instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_2_tk)
+    instruction_image_label.image = instruction_image_2_tk  # Keep a reference, prevent GC
+    instruction_image_label.pack(side=tk.TOP, pady=10)
+    img_instruct_label = ttk.Label(instruction_frame, text="Please Bring Your Arms Up Like This:", font=("Helvetica", 24))
+    img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
+    
+
+
+
+
 
     while timesChecked < 10:
         results = pose.process(image_rgb)
@@ -1139,13 +1151,13 @@ def draw_guide_overlay_1(frame, results):
         left_shoulder_y = left_shoulder.y * frame_height
         right_shoulder_x = right_shoulder.x * frame_width
         right_shoulder_y = right_shoulder.y * frame_height
-        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.7
+        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.8
         left_elbow_y = left_shoulder_y
-        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.7
+        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.8
         right_elbow_y = left_shoulder_y
-        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*1.3
+        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*1.55
         left_wrist_y = left_shoulder_y
-        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*1.3
+        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*1.55
         right_wrist_y = left_shoulder_y
 
 
@@ -1212,6 +1224,8 @@ def check_points_in_circles(frame, results):
                                           initial_circle_positions.values()):
             if np.linalg.norm(pos - np.array(circle_pos)) <= radius:
                 points_in_position[label] = True
+            else:
+                points_in_position[label] = False
 
     return points_in_position
 
@@ -1301,13 +1315,13 @@ def draw_guide_overlay_3(frame, results):
         right_shoulder_x = right_shoulder.x * frame_width
         right_shoulder_y = right_shoulder.y * frame_height
         left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.2
-        left_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.8
+        left_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.9
         right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.15
-        right_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.8
+        right_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.9
         left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.15
-        left_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.62
+        left_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.78
         right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.15
-        right_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.62
+        right_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.78
 
 
 
@@ -1343,7 +1357,11 @@ def draw_guide_overlay_3(frame, results):
     return overlay
 
 
-
+def format_point_name(point):
+    """
+    Convert point name from 'left_shoulder' to 'Left Shoulder'.
+    """
+    return ' '.join(word.capitalize() for word in point.split('_'))
 
 
 
@@ -1636,7 +1654,7 @@ def update_image():
 """
 
 def update_image():
-    global last_update_time, twoStepDone, current_stage, initial_circle_positions
+    global last_update_time, twoStepDone, current_stage, initial_circle_positions, img_instruct_label, instruction_image_label
 
     ret, frame = cap.read()
     if not ret:
@@ -1650,23 +1668,80 @@ def update_image():
     if current_stage == 'overlay_1':
         overlay = draw_guide_overlay_1(frame, results)
         points_in_position = check_points_in_circles(frame, results)
+
+        # Clear the existing text
+        vid_instruct_text.config(state=tk.NORMAL)
+        vid_instruct_text.delete('1.0', tk.END)
+
+         # Insert new status text with colors
+        for point, status in points_in_position.items():
+            formatted_point = format_point_name(point)
+            color = 'green' if status else 'purple' if 'Wrist' in formatted_point else 'red' if 'Elbow' in formatted_point else 'blue'
+            vid_instruct_text.insert(tk.END, f"{formatted_point} is in Position: {status}\n", color)
+
+        vid_instruct_text.config(state=tk.DISABLED)
+
+
+
         if all(points_in_position.values()):
             init_data_update(image)
             initial_circle_positions = {}  # Reset for the next overlay
             current_stage = 'overlay_2'
+            
+            
 
     elif current_stage == 'overlay_2':
         overlay = draw_guide_overlay_2(frame, results)
         points_in_position = check_points_in_circles(frame, results)
+        
+        
+        # Clear the existing text
+        vid_instruct_text.config(state=tk.NORMAL)
+        vid_instruct_text.delete('1.0', tk.END)
+
+         # Insert new status text with colors
+        for point, status in points_in_position.items():
+            formatted_point = format_point_name(point)
+            color = 'green' if status else 'purple' if 'Wrist' in formatted_point else 'red' if 'Elbow' in formatted_point else 'blue'
+            vid_instruct_text.insert(tk.END, f"{formatted_point} is in Position: {status}\n", color)
+
+        vid_instruct_text.config(state=tk.DISABLED)
+
+
+
+
+
         if all(points_in_position.values()):
             init2_data_update(image)
             find_depth_ratio()
             initial_circle_positions = {}  # Reset for the next overlay
             current_stage = 'overlay_3'
+            instruction_image_label = ttk.Label(instruction_frame, image=instruction_image_3_tk)
+            instruction_image_label.image = instruction_image_3_tk  # Keep a reference, prevent GC
+            instruction_image_label.pack(side=tk.TOP, pady=10)
+            img_instruct_label = ttk.Label(instruction_frame, text="Please Bring Your Arms Down Like This:", font=("Helvetica", 24))
+            img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
 
     elif current_stage == 'overlay_3':
         overlay = draw_guide_overlay_3(frame, results)
         points_in_position = check_points_in_circles(frame, results)
+
+        
+        # Clear the existing text
+        vid_instruct_text.config(state=tk.NORMAL)
+        vid_instruct_text.delete('1.0', tk.END)
+
+         # Insert new status text with colors
+        for point, status in points_in_position.items():
+            formatted_point = format_point_name(point)
+            color = 'green' if status else 'purple' if 'Wrist' in formatted_point else 'red' if 'Elbow' in formatted_point else 'blue'
+            vid_instruct_text.insert(tk.END, f"{formatted_point} is in Position: {status}\n", color)
+
+        vid_instruct_text.config(state=tk.DISABLED)
+
+
+
+
         if all(points_in_position.values()):
             init3_data_update(image)
             twoStepDone = True
@@ -1877,18 +1952,31 @@ root.title("Pose Detection with Data Output")
 
 # Create the main frame
 main_frame = ttk.Frame(root)
-main_frame.pack(padx=10, pady=10, fill='both', expand=True)
+main_frame.pack(padx=10, pady=0, fill='both', expand=True)
 
-instruct_label = ttk.Label(main_frame, text="Please Step 1 Foot Forward", font=("Helvetica", 16))
-instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+instruct_label = ttk.Label(main_frame, text="Please Align Your Body to Fit In The Circles", font=("Helvetica", 20))
+instruct_label.pack(side=tk.TOP, fill='y', expand=True, padx=10, pady=10)
 
 video_frame = ttk.LabelFrame(main_frame, text="Video Output")
 video_frame.pack(side=tk.LEFT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
-video_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
+video_frame.pack_propagate(True)  # Prevent the frame from resizing to fit its content
 video_frame.config(width=600, height=600)  # Set the width and height of the frame
-
+"""
 vid_instruct_label = ttk.Label(video_frame, text="Please Align Your Body to Fit In The Circles", font=("Helvetica", 16))
 vid_instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+"""
+vid_instruct_text = tk.Text(video_frame, width=40, height=10, font=("Helvetica", 14))
+vid_instruct_text.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=0)
+vid_instruct_text.config(state=tk.DISABLED, height=6)  # Make it read-only
+
+
+vid_instruct_text.tag_configure('blue', foreground='blue')
+vid_instruct_text.tag_configure('red', foreground='red')
+vid_instruct_text.tag_configure('purple', foreground='purple')
+vid_instruct_text.tag_configure('green', foreground='green')
+
+
+
 
 # Create a label in the main frame for video feed
 video_label = ttk.Label(video_frame)
@@ -1896,21 +1984,22 @@ video_label.pack(side=tk.LEFT, fill='both', expand=True, padx=10, pady=10)
 
 
 instruction_frame = ttk.LabelFrame(main_frame, text="Instruction Frame")
-instruction_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
+instruction_frame.pack(side=tk.RIGHT, fill='x', expand=False, padx=20, pady=10)  # Apply padx and pady here
 instruction_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
-instruction_frame.config(width=400, height=600)  # Set the width and height of the frame
+instruction_frame.config(width=650, height=600)  # Set the width and height of the frame
 
 
 
 
-img_instruct_label = ttk.Label(instruction_frame, text="Please Spread Your Arms Out Like This:", font=("Helvetica", 16))
-img_instruct_label.pack(side=tk.TOP, fill='both', expand=True, padx=10, pady=10)
+img_instruct_label = ttk.Label(instruction_frame, text="Please Spread Your Arms Out Like This:", font=("Helvetica", 24))
+img_instruct_label.pack(side=tk.TOP, fill='none', expand=True, padx=10, pady=10)
+
 
 # Load the image
 instruction_image_1 = Image.open(instruction_image_1_path)
 
 # Resize the image if necessary
-instruction_image_1 = instruction_image_1.resize((400, 400), Image.Resampling.LANCZOS)
+instruction_image_1 = instruction_image_1.resize((615, 400), Image.Resampling.LANCZOS)
 
 # Convert the image to a format suitable for Tkinter
 instruction_image_1_tk = ImageTk.PhotoImage(instruction_image_1)
@@ -1919,7 +2008,7 @@ instruction_image_1_tk = ImageTk.PhotoImage(instruction_image_1)
 instruction_image_2 = Image.open(instruction_image_2_path)
 
 # Resize the image if necessary
-instruction_image_2 = instruction_image_2.resize((400, 400), Image.Resampling.LANCZOS)
+instruction_image_2 = instruction_image_2.resize((615, 400), Image.Resampling.LANCZOS)
 
 # Convert the image to a format suitable for Tkinter
 instruction_image_2_tk = ImageTk.PhotoImage(instruction_image_2)
@@ -1928,7 +2017,7 @@ instruction_image_2_tk = ImageTk.PhotoImage(instruction_image_2)
 instruction_image_3 = Image.open(instruction_image_3_path)
 
 # Resize the image if necessary
-instruction_image_3 = instruction_image_3.resize((400, 400), Image.Resampling.LANCZOS)
+instruction_image_3 = instruction_image_3.resize((615, 400), Image.Resampling.LANCZOS)
 
 # Convert the image to a format suitable for Tkinter
 instruction_image_3_tk = ImageTk.PhotoImage(instruction_image_3)
