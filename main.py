@@ -57,7 +57,7 @@ isGraphOn = True
 Enable Start Up Bypass
 \/ \/ \/ \/ \/ \/ \/ \/
 """
-BypassStartUp = True
+BypassStartUp = False
 """
 /\ /\ /\ /\ /\ /\ /\ /\ 
 Enable Start Up Bypass
@@ -1155,13 +1155,13 @@ def draw_guide_overlay_1(frame, results):
         left_shoulder_y = left_shoulder.y * frame_height
         right_shoulder_x = right_shoulder.x * frame_width
         right_shoulder_y = right_shoulder.y * frame_height
-        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.8
+        left_elbow_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.85
         left_elbow_y = left_shoulder_y
-        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.8
+        right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.85
         right_elbow_y = left_shoulder_y
-        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*1.55
+        left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*1.65
         left_wrist_y = left_shoulder_y
-        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*1.55
+        right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*1.65
         right_wrist_y = left_shoulder_y
 
 
@@ -1323,9 +1323,9 @@ def draw_guide_overlay_3(frame, results):
         right_elbow_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.15
         right_elbow_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*0.9
         left_wrist_x = left_shoulder_x - (right_shoulder_x-left_shoulder_x)*0.15
-        left_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.78
+        left_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.75
         right_wrist_x = right_shoulder_x + (right_shoulder_x-left_shoulder_x)*0.15
-        right_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.78
+        right_wrist_y = left_shoulder_y - (right_shoulder_x-left_shoulder_x)*1.75
 
 
 
@@ -1658,7 +1658,7 @@ def update_image():
 """
 
 def update_image():
-    global last_update_time, twoStepDone, current_stage, initial_circle_positions, img_instruct_label, instruction_image_label
+    global last_update_time, twoStepDone, current_stage, initial_circle_positions, img_instruct_label, instruction_image_label, start_time
 
     ret, frame = cap.read()
     if not ret:
@@ -1745,6 +1745,12 @@ def update_image():
 
         if all(points_in_position.values()):
             init3_data_update(image)
+            instruct_label.config(text="Simulation Started")
+            vid_instruct_text.config(state=tk.NORMAL)
+            vid_instruct_text.delete('1.0', tk.END)
+            vid_instruct_text.insert(tk.END, "Simulation in Progress", 'black')
+            vid_instruct_text.config(state=tk.DISABLED,height=1)
+            print("im being ran&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
             twoStepDone = True
             packTwoSteps()
             current_stage = 'data_update'
@@ -1753,6 +1759,27 @@ def update_image():
         overlay = None  # Clear overlay for the data update phase
         data_update(image)
         update_labels()
+        #vid_instruct_text.config(state=tk.DISABLED, height=1)
+        
+
+        if start_time == 0:
+            # Clear the existing text
+
+            start_time = time.time()
+
+        # Calculate the elapsed time since the start
+        elapsed_time = time.time() - start_time
+
+
+
+        if elapsed_time > time_simulation_active:
+            print(str(time_simulation_active) + " seconds have elapsed, stopping the update.")
+            cap.release()
+            cv2.destroyAllWindows()
+            #root.destroy()
+            return # Exit the function to stop the loop
+
+
 
     if overlay is not None:
         image = cv2.addWeighted(overlay, 0.6, frame, 1 - 0.6, 0)
@@ -1766,6 +1793,9 @@ def update_image():
     if twoStepDone:
         if isGraphOn:
             plot_graph()
+
+    
+
 
     root.after(10, update_image)
 
@@ -1978,6 +2008,8 @@ vid_instruct_text.tag_configure('blue', foreground='blue')
 vid_instruct_text.tag_configure('red', foreground='red')
 vid_instruct_text.tag_configure('purple', foreground='purple')
 vid_instruct_text.tag_configure('green', foreground='green')
+vid_instruct_text.tag_configure('black', foreground='black')
+
 
 
 
