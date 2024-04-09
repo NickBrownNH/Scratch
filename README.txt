@@ -1,4 +1,4 @@
-Before running this program, watch the video titled WatchMeFirst before continuing first.
+Before running this program, watch the video titled WatchMeFirst inside the video folder before first use.
 
 To use this program, you want to run the main.py file.
 
