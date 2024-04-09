@@ -1,4 +1,5 @@
 Before running this program, watch the video titled WatchMeFirst inside the video folder before first use.
+You can watch it here: https://www.youtube.com/watch?v=fKXAU3BH3vE 
 
 To use this program, you want to run the main.py file.
 
