@@ -45,7 +45,7 @@ time_simulation_var = 0
 start_time = 0
 twoStepDone = False
 twoStepCountDown = 10
-isGraphOn = False
+isGraphOn = True
 depth_ratio = 0
 time_simulation_active = 60 
 
@@ -1715,6 +1715,7 @@ def update_image():
 
 
 
+
         if all(points_in_position.values()):
             init2_data_update(image)
             find_depth_ratio()
@@ -1762,6 +1763,9 @@ def update_image():
     image_tk = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
     video_label.config(image=image_tk)
     video_label.image = image_tk
+    if twoStepDone:
+        if isGraphOn:
+            plot_graph()
 
     root.after(10, update_image)
 
