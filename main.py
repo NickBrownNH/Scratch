@@ -572,13 +572,14 @@ def get_left_wrist_x_y_z():
 # distance = get_distance_right_eye_outer_to_ear(image)
 # print("Distance:", distance)
 
-
+"""
 def calculate_z(z_init, max_length, max_length3, actual_length, angle, pitch, hipShoElb):
     z = 0
     max_len1 = max_length*m_to_mpu_ratio
     max_len3 = max_length3*m_to_mpu_ratio
     max_len = max_len1 + (depth_ratio*(init_distance_hip_shoulder*abs(pitch/90))) + ((max_len3-max_len1)*abs((90-hipShoElb)/90))
     act_len = actual_length*m_to_mpu_ratio
+    act_len_prime = act_len - (depth_ratio*(init_distance_hip_shoulder*abs(pitch/90))) - ((max_len3-max_len1)*abs((90-hipShoElb)/90))
 
     if angle > 0:
         if act_len >= max_len: 
@@ -586,6 +587,36 @@ def calculate_z(z_init, max_length, max_length3, actual_length, angle, pitch, hi
         if developer_mode:    
             print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
         z = z_init + np.sqrt(abs((max_len)**2 - (act_len)**2))
+
+        return z
+    else:
+        if act_len >= max_len: 
+            act_len = max_len
+        z = z_init + np.sqrt((max_len)**2 - (act_len)**2)
+        if developer_mode:
+            print("z_init: " + str(z_init) + ", max_length1: " + str(max_len1) + ", max_length3: " + str(max_len3) + ", act_max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", pitch angle: " + str(pitch) + ", shoulder angle: " + str(hipShoElb) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
+        return z
+"""
+
+def calculate_z(z_init, max_length, max_length3, actual_length, angle, pitch, hipShoElb):
+    z = 0
+    max_len1 = max_length*m_to_mpu_ratio
+    max_len3 = max_length3*m_to_mpu_ratio
+    max_len = max_len1
+    act_len = actual_length*m_to_mpu_ratio
+    act_len_prime = act_len - (depth_ratio*(init_distance_hip_shoulder*abs(pitch/90))) - ((max_len3-max_len1)*abs((90-hipShoElb)/90))
+
+    if angle >= 0:
+        if act_len_prime >= max_len: 
+            act_len_prime = max_len
+        if developer_mode:    
+            print("z_init: " + str(z_init) + ", max_length: " + str(max_len) + ", actual_length: " + str(act_len) + ", actual_length_prime: " + str(act_len_prime) + ", angle: " + str(angle) + ", max mpu: " + str(init_user_max_mpu) + ", z = zinit + " + str(np.sqrt((max_len)**2 - (act_len)**2)) + ", z = " + str(z))
+        z = z_init + (-depth_ratio*act_len_prime+np.sqrt(-(act_len_prime**2)+(max_len**2)+(depth_ratio**2)*(max_len**2)))/(1+(depth_ratio**2))
+        print("\n\n z = z_init + (-k * Lc'' + sqrt(-Lc''2 + Lm2 + k2 * Lm2)) / 1 - k2 \n" + 
+              str(z) + " = " + str(z_init) + " + (" + str(-depth_ratio) + " * " + str(act_len_prime) + " + sqrt(" + str(-(act_len_prime**2)) + " + " + str((max_len**2)) + " + " + 
+              str((depth_ratio**2)) + " * " + str((max_len**2)) + " )) / 1 - " + str(depth_ratio**2) + "\n\n" +
+              "(-k * Lc'' + sqrt(-Lc''2 + Lm2 + k2 * Lm2)) = " + str( (-depth_ratio*act_len_prime+np.sqrt(-(act_len_prime**2)+(max_len**2)+(depth_ratio**2)*(max_len**2)))) +
+              "\n 1 - k2 = " + str((1+(depth_ratio**2))))
 
         return z
     else:
@@ -669,21 +700,25 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
         print("height diff: " + str(height_diff_hip_shoulder) + ", max height: " + str(max_height) + ", arms down: " + str(init_height_diff_right_shoulder_to_right_hip3) + ", arms up: " + str(init_height_diff_right_shoulder_to_right_hip))
         if height_diff_hip_shoulder > max_height:
             ratio = 1  # Adjusted to use head_width for the arc sine calculation
+        elif (height_diff_hip_shoulder/max_height) < 0.1:
+            ratio = 0.1
         else:
             ratio = (height_diff_hip_shoulder/max_height)  # Adjusted to use head_width for the arc sine calculation
         angle_in_radians = math.asin(ratio)
         angle_in_degrees = math.degrees(angle_in_radians)
 
+        print("\n\nratio: " + str(ratio) + ", radians: " + str(angle_in_radians) + ", degrees: " + str(angle_in_degrees) + "\n\n")
+
         if eye_ear_angle <= init_eye_ear_angle:
             if developer_mode:
                 print("up")
             # Adjust the calculation to use the angle from arcsin
-            return round((angle_in_degrees), 4)
+            return round(-(90-(angle_in_degrees)), 4)
         else:
             if developer_mode:
                 print("down")
             # Adjust the calculation to use the angle from arcsin
-            return round(((angle_in_degrees))-180, 4)
+            return round(90-(angle_in_degrees), 4)
     
     return 0
 
@@ -1076,7 +1111,7 @@ def find_depth_ratio():
         init_left_elbow_to_left_wrist_ratio = (init_left_elbow_to_left_wrist + init_left_elbow_to_left_wrist2) / 30
         init_user_max_mpu_ratio = (init_user_max_mpu + init_user_max_mpu2)   / 30
     else:
-        depth_ratio = ((init_right_elbow_to_right_wrist + init_left_elbow_to_left_wrist)/(init_right_elbow_to_right_wrist2 + init_left_elbow_to_left_wrist2))
+        depth_ratio = ((init_right_elbow_to_right_wrist2 + init_left_elbow_to_left_wrist2)/(init_right_elbow_to_right_wrist + init_left_elbow_to_left_wrist))
         print("depth ratio: " + str(depth_ratio))
 
 
@@ -1131,7 +1166,7 @@ def update_labels():
             rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
             body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
             body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
-            body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°" if body_pitch else "Torso Pitch: N/A")
+            body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°")
         bicep_force_label.config(text=f"Bicep Force: {left_arm_bicep_force if left_arm_bicep_force else 'N/A'}")
         test_num_label.config(text=f"Left Arm Angle: {test_num if test_num else 'N/A'}")
         #test_num_label.config(text=f"Left Hip (X, Y, Z): ({left_hip_x if left_hip_x else 'N/A'}cm, {left_hip_y if left_hip_y else 'N/A'}cm, {left_hip_z if left_hip_z else 'N/A'}cm)")
@@ -2089,14 +2124,16 @@ def packTwoSteps():
     data_frame.pack(side=tk.RIGHT, fill='both', expand=False, padx=20, pady=10)  # Apply padx and pady here
     data_frame.pack_propagate(False)  # Prevent the frame from resizing to fit its content
     data_frame.config(width=400, height=600)  # Set the width and height of the frame
-    graph_frame.pack(side=tk.BOTTOM, fill='both', expand=False, padx=10, pady=10)
-    graph_frame.config(width=400, height=300)  # Set the width and height of the frame
+    if isGraphOn:
+        graph_frame.pack(side=tk.BOTTOM, fill='both', expand=False, padx=10, pady=10)
+        graph_frame.config(width=400, height=300)  # Set the width and height of the frame
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    direction_facing_label.pack(anchor=tk.W)
-    rot_mtx_label.pack(anchor=tk.W)
-    body_pitch_label.pack(anchor=tk.W)
-    body_roll_label.pack(anchor=tk.W)
-    body_yaw_label.pack(anchor=tk.W)
+    if developer_mode:
+        direction_facing_label.pack(anchor=tk.W)
+        rot_mtx_label.pack(anchor=tk.W)
+        body_pitch_label.pack(anchor=tk.W)
+        body_roll_label.pack(anchor=tk.W)
+        body_yaw_label.pack(anchor=tk.W)
     bicep_force_label.pack(anchor=tk.W)
     test_num_label.pack(anchor=tk.W)
     user_height_frame.pack(fill='x', expand=True, pady=5)
