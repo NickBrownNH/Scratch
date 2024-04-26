@@ -57,7 +57,7 @@ isGraphOn = True
 Enable Start Up Bypass
 \/ \/ \/ \/ \/ \/ \/ \/
 """
-BypassStartUp = False
+BypassStartUp = True
 """
 /\ /\ /\ /\ /\ /\ /\ /\ 
 Enable Start Up Bypass
@@ -669,7 +669,7 @@ def calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facin
     return 0
 
 
-def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear_angle, init_eye_ear_angle):
+def calculate_body_pitch(head_width, height_diff_hip_shoulder, eye_ear_angle, init_eye_ear_angle):
     """
     Calculate the body's pitch based on height difference between the right should and the right hip over the width of the head 
     and the direction facing(up or down) to notate whether the user is leaning forward or backward.
@@ -687,14 +687,15 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
                 return round((((height_diff_hip_shoulder / init_val), 0)*90)-180, 4) #init_val = ? - took out *2 after *90)
     return 0
     """
+    uncertainty_buffer = 10 #10 degrees
     hipShoElb = calculate_left_hip_shoulder_elbow_angle()
-    max_height = init_height_diff_right_shoulder_to_right_hip3 + ((init_height_diff_right_shoulder_to_right_hip-init_height_diff_right_shoulder_to_right_hip3)*(hipShoElb-10)/90)
+    max_height = init_height_diff_right_shoulder_to_right_hip3 + ((init_height_diff_right_shoulder_to_right_hip-init_height_diff_right_shoulder_to_right_hip3)*(hipShoElb)/90)
 
 
 
 
 
-    if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder != 0:
+    if head_width is not None and height_diff_hip_shoulder is not None and height_diff_hip_shoulder is not None:
 
 
         print("height diff: " + str(height_diff_hip_shoulder) + ", max height: " + str(max_height) + ", arms down: " + str(init_height_diff_right_shoulder_to_right_hip3) + ", arms up: " + str(init_height_diff_right_shoulder_to_right_hip))
@@ -713,12 +714,14 @@ def calculate_body_pitch(head_width, height_diff_hip_shoulder, init_val, eye_ear
             if developer_mode:
                 print("up")
             # Adjust the calculation to use the angle from arcsin
-            return round(-(90-(angle_in_degrees)), 4)
+            return_val = round(-(90-(angle_in_degrees)), 4)
+            return return_val if return_val < uncertainty_buffer else 0
         else:
             if developer_mode:
                 print("down")
             # Adjust the calculation to use the angle from arcsin
-            return round(90-(angle_in_degrees), 4)
+            return_val = round(90-(angle_in_degrees), 4)
+            return return_val if return_val > uncertainty_buffer else 0
     
     return 0
 
@@ -1135,7 +1138,7 @@ def data_update(image):
     direction_num, direction_facing = calculate_direction(distance_right, distance_left)
     body_yaw = calculate_body_yaw(distance_shoulder, distance_hip_shoulder, direction_facing, (init_distance_shoulder/init_distance_hip_shoulder))
     body_roll = calculate_body_roll()  # Calculate shoulder angle
-    body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, init_height_diff_right_shoulder_to_right_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
+    body_pitch = calculate_body_pitch(head_width, height_diff_shoulder_hip, nose_eye_ear_angle, init_nose_eye_ear_angle)
     hipShoElb = calculate_left_hip_shoulder_elbow_angle()
     left_hip_x = get_left_hip_x()
     left_hip_y = get_left_hip_y()
@@ -1163,7 +1166,7 @@ def update_labels():
     if twoStepDone:
         if developer_mode:
             direction_facing_label.config(text=f"Direction Facing: {direction_facing}")
-            rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch if body_pitch else 'N/A'}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
+            rot_mtx_label.config(text=f"Torso Rotation (Pitch, Yaw, Roll): ({body_pitch}°, {body_yaw if body_yaw else 'N/A'}°, {round(body_roll,4) if body_roll else 'N/A'}°)")
             body_roll_label.config(text=f"Torso Roll: {body_roll:.2f}°" if body_roll is not None else "Torso Roll: N/A")
             body_yaw_label.config(text=f"Torso Yaw: {body_yaw:.2f}°" if body_yaw else "Torso Yaw: N/A")
             body_pitch_label.config(text=f"Torso Pitch: {body_pitch:.2f}°")
